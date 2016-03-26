@@ -1,6 +1,7 @@
 import javalib.impworld.*;
 import javalib.worldimages.*;
 import java.awt.Color;
+import java.util.ArrayList;
 
 // Represents a cell.
 class Cell {
@@ -10,6 +11,14 @@ class Cell {
     int x, y;
     Cell left, top, right, bottom;
     boolean isFlooded, hasPart;
+    
+    Cell(double height, int x, int y) {
+        this.height = height;
+        this.x = x;
+        this.y = y;
+        this.isFlooded = false;
+        this.hasPart = false;
+    }
     
     // EFFECT: Sets the flooded state of this cell to the given boolean.
     void setFlooded(boolean isFlooded) {
