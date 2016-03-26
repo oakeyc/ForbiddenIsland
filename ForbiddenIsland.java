@@ -51,6 +51,7 @@ class Cell {
 
 // A cell in the ocean.
 class OceanCell extends Cell {
+    
     OceanCell(int x, int y) {
         super(0, x, y);
         this.isFlooded = true;
@@ -76,4 +77,53 @@ class OceanCell extends Cell {
         return new OverlayImage(new RectangleImage(Cell.CELL_SIZE, Cell.CELL_SIZE,
                 OutlineMode.SOLID, Color.BLUE), background);
     }
+}
+
+
+
+// A board representing an island.
+class Board {
+    ArrayList<ArrayList<Cell>> cells;
+    
+    Board() {
+        this.makeMountainBoard();
+    }
+    
+    void makeMountainBoard() {
+        ArrayList<ArrayList<Double>> hieghts = new ArrayList<ArrayList<Double>>();
+        double middle = ForbiddenIsland.ISLAND_SIZE / 2.0;
+        
+        for (int i = 0; i < ForbiddenIsland.ISLAND_SIZE; i++) {
+            hieghts.add(new ArrayList<Double>());
+            for (int j = 0; j < ForbiddenIsland.ISLAND_SIZE; j++) {
+                
+            }
+        }
+    }
+    
+    ArrayList<ArrayList<Cell>> doubleListToCellList(ArrayList<ArrayList<Double>> heights) {
+        ArrayList<ArrayList<Cell>> result = new ArrayList<ArrayList<Cell>>();
+        
+        for (int i = 0; i < ForbiddenIsland.ISLAND_SIZE; i++) {
+            result.add(new ArrayList<Cell>());
+            for (int j = 0; j < ForbiddenIsland.ISLAND_SIZE; j++) {
+                result.get(i).add(new Cell(heights.get(i).get(j), i, j));
+            }
+        }
+        
+        return result;
+    }
+    
+    void updateBoard(int waterHeight) {
+        for (ArrayList<Cell> row : cells) {
+            for (Cell cell : row) {
+                cell.update(waterHeight);
+            }
+        }
+    }
+}
+
+
+class ForbiddenIsland {
+    static final int ISLAND_SIZE = 64;
 }
