@@ -2,6 +2,7 @@ import javalib.impworld.*;
 import javalib.worldimages.*;
 import java.awt.Color;
 
+// Represents a cell.
 class Cell {
     static final int CELL_SIZE = 20;
     
@@ -28,10 +29,11 @@ class Cell {
         WorldImage cell;
         if (this.isFlooded) {
             cell = new RectangleImage(Cell.CELL_SIZE, Cell.CELL_SIZE, OutlineMode.SOLID,
-                    new Color());
+                    new Color(0x0000FF));
         }
         else {
-            
+            cell = new RectangleImage(Cell.CELL_SIZE, Cell.CELL_SIZE, OutlineMode.SOLID,
+                    new Color(0x00FF00));
         }
         return new OverlayImage(cell, background);
     }
