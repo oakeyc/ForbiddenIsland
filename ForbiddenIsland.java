@@ -6,13 +6,8 @@ import java.awt.Color;
 import javalib.worldimages.*; 
 
 // A cell of land.
-class Cell {
-<<<<<<< HEAD
-    static final int CELL_SIZE = 5;
-    
-=======
-    static final int CELL_SIZE = 15; // size of the drawn cell
->>>>>>> origin/master
+class Cell {=
+    static final int CELL_SIZE = 5; // size of the drawn cell
     double height;
     int x, y; // position
     Cell left, top, right, bottom; // neighboring cells
