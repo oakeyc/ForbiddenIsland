@@ -163,7 +163,7 @@ class Board {
         this.cells = this.doubleListToCellList(heights);
     }
     
-    void makeRandomBoard() {
+    void makeTerrainBoard() {
         
     }
     
@@ -262,9 +262,9 @@ class Player
         }
     }
 
-    WorldImage drawOnto()
+    WorldImage drawOnto(WorldImage background)
     {
-        return new FromFileImage("pilot-icon.png");
+        return new OverlayImage(new FromFileImage("Images/pilot-icon.png"), background);
     }
 }
 
@@ -274,7 +274,7 @@ class ForbiddenIslandWorld extends World
     ArrayList<ArrayList<Double>> heights; // a record of all the cell's heights
     ArrayList<String> undo1;
     int waterHeight; // the height of the water
-    static final int ISLAND_SIZE = 40; // constant val
+    static final int ISLAND_SIZE = 64; // constant val
     static final int BACKGROUND_SIZE = Cell.CELL_SIZE * ISLAND_SIZE;
     Player player1;
     final int waterIncrease = 1;
@@ -282,6 +282,7 @@ class ForbiddenIslandWorld extends World
     ForbiddenIslandWorld()
     {
         this.board = new Board();
+        this.player1 = new Player();
         // defaults as mountain island
         // probably some code from the board class with the mountain
     }
@@ -306,10 +307,10 @@ class ForbiddenIslandWorld extends World
                 board.makeMountainBoard();
                 break;
             case "r": // random island
-                board.makeRandomBoard();
-                break;
-            case "d": // diagonal island
                 board.makeDiamondBoard();
+                break;
+            case "t": // terrain island
+                board.makeTerrainBoard();
                 break;
         }
     }
@@ -341,11 +342,11 @@ class ForbiddenIslandWorld extends World
     public WorldScene makeScene()
     {
         WorldScene scene = this.getEmptyScene();
-        //scene.placeImageXY(this.player1.drawOnto(), this.player1.x, this.player1.y);
-        scene.placeImageXY(this.board.drawOnto(
-                new RectangleImage(this.BACKGROUND_SIZE,
-                        this.BACKGROUND_SIZE,
-                        OutlineMode.SOLID, new Color(0x80))),
+        scene.placeImageXY(this.player1.drawOnto(
+                this.board.drawOnto(
+                        new RectangleImage(this.BACKGROUND_SIZE,
+                                this.BACKGROUND_SIZE,
+                                OutlineMode.SOLID, new Color(0x80)))),
                 this.BACKGROUND_SIZE / 2, this.BACKGROUND_SIZE / 2);
         return scene;
     }
