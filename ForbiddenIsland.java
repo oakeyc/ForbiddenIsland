@@ -10,7 +10,7 @@ import javalib.worldimages.*;
 
 // A cell of land.
 class Cell {
-    static final int CELL_SIZE = 15;
+    static final int CELL_SIZE = 5;
     
     double height;
     int x, y;
@@ -181,9 +181,74 @@ class Board {
         for (int i = 0; i < ForbiddenIslandWorld.ISLAND_SIZE; i++) {
             ArrayList<Double> row = new ArrayList<Double>();
             for (int j = 0; j < ForbiddenIslandWorld.ISLAND_SIZE; j++) {
-                
+                row.add(0.0);
             }
+            heights.add(row);
         }
+        
+        int mid = ForbiddenIslandWorld.ISLAND_SIZE / 2;
+        
+        heights.get(mid)
+            .set(0, 1.0);
+        heights.get(mid)
+            .set(ForbiddenIslandWorld.ISLAND_SIZE - 1, 1.0);
+        heights.get(0)
+            .set(mid, 1.0);
+        heights.get(ForbiddenIslandWorld.ISLAND_SIZE - 1)
+            .set(ForbiddenIslandWorld.ISLAND_SIZE / 2, 1.0);
+                
+        heights = this.makeTerrainBoardHelper(heights,
+                0, mid,
+                0, mid,
+                ForbiddenIslandWorld.ISLAND_SIZE / 2.0);
+        heights = this.makeTerrainBoardHelper(heights,
+                0, mid,
+                mid, ForbiddenIslandWorld.ISLAND_SIZE - 1,
+                ForbiddenIslandWorld.ISLAND_SIZE / 2.0);
+        heights = this.makeTerrainBoardHelper(heights,
+                mid, ForbiddenIslandWorld.ISLAND_SIZE - 1,
+                0, mid,
+                ForbiddenIslandWorld.ISLAND_SIZE / 2.0);
+        heights = this.makeTerrainBoardHelper(heights,
+                mid, ForbiddenIslandWorld.ISLAND_SIZE - 1,
+                mid, ForbiddenIslandWorld.ISLAND_SIZE - 1,
+                ForbiddenIslandWorld.ISLAND_SIZE / 2.0);
+        
+        this.cells = this.doubleListToCellList(heights);
+    }
+    
+    ArrayList<ArrayList<Double>> makeTerrainBoardHelper
+    (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax, double var) {
+        Random rand = new Random();
+        Double tl = heights.get(rmin).get(cmin);
+        Double tr = heights.get(rmin).get(cmax);
+        Double bl = heights.get(rmax).get(cmin);
+        Double br = heights.get(rmax).get(cmax);
+        int midCol = (cmin + cmax) / 2;
+        int midRow = (rmin + rmax) / 2;
+        
+        if (rmax - rmin >= 2  && cmax - cmin >= 2) {
+            Double l = rand.nextDouble() * var + (tl + bl) / 2;
+            Double t = rand.nextDouble() * var + (tl + tr) / 2;
+            Double r = rand.nextDouble() * var + (tr + br) / 2;
+            Double b = rand.nextDouble() * var + (bl + br) / 2;
+            Double m = rand.nextDouble() * var + (l + t + r + b) / 4;
+            heights.get(midRow).set(cmin, l);
+            heights.get(midRow).set(cmax, r);
+            heights.get(rmin).set(midCol, t);
+            heights.get(rmax).set(midCol, b);
+            heights.get(midRow).set(midCol, m);
+        }
+        else {
+            return heights;
+        }
+        
+        heights = this.makeTerrainBoardHelper(heights, midRow, rmax, midCol, cmax, var / 4);
+        heights = this.makeTerrainBoardHelper(heights, midRow, rmax, cmin, midCol, var / 4);
+        heights = this.makeTerrainBoardHelper(heights, rmin, midRow, midCol, cmax, var / 4);
+        heights = this.makeTerrainBoardHelper(heights, rmin, midRow, cmin, midCol, var / 4);
+        
+        return heights;
     }
     
     ArrayList<ArrayList<Cell>> doubleListToCellList(ArrayList<ArrayList<Double>> heights) {
@@ -342,7 +407,7 @@ class ForbiddenIslandWorld extends World
     Board board; // all the cells
     int waterHeight; // the height of the water
     static final int ISLAND_SIZE = 64; // constant val
-    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * ISLAND_SIZE;
+    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * 3 * ISLAND_SIZE;
     Player player1;
     final int waterIncrease = 1;
     int tick;
