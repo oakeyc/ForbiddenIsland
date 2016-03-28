@@ -264,7 +264,10 @@ class Player
 
     WorldImage drawOnto(WorldImage background)
     {
-        return new OverlayImage(new FromFileImage("Images/pilot-icon.png"), background);
+        return new OverlayImage(
+                new ScaleImage(
+                        new FromFileImage("Images/pilot-icon.png"), 0.5),
+                background);
     }
 }
 
