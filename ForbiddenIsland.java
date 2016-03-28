@@ -13,22 +13,29 @@ class Cell {
     static final int CELL_SIZE = 15;
     
     double height;
-    int x, y, waterHeight;
+    int x, y;
     Cell left, top, right, bottom;
     boolean isFlooded, hasPart;
     
-    Cell(double height, int x, int y, int waterHeight) {
+    Cell(double height, int x, int y) {
         this.height = height;
-        this.waterHeight = waterHeight;
         this.x = x;
         this.y = y;
         this.isFlooded = false;
         this.hasPart = false;
+        this.left = this.top = this.right = this.bottom = null;
     }
     
     // EFFECT: Sets the flooded state of this cell to the given boolean.
     void setFlooded(boolean isFlooded) {
         this.isFlooded = isFlooded;
+    }
+    
+    void setNeighbors(Cell left, Cell top, Cell right, Cell bottom) {
+        this.left = left;
+        this.top = top;
+        this.right = right;
+        this.bottom = bottom;
     }
     
     // compares the height of this cell to the height of that cell.
@@ -40,12 +47,12 @@ class Cell {
     }
     
     // Draws this cell onto the given background.
-    WorldImage drawOnto(WorldImage background) {
+    WorldImage drawOnto(WorldImage background, int waterHeight) {
         WorldImage cell;
         if (this.isFlooded) {
             int maxHeight = ForbiddenIslandWorld.ISLAND_SIZE / 2;
-            double ratio = (this.waterHeight - this.height) / maxHeight;
-            int color = (int) (0xFF * (1 - ratio));
+            double ratio = Math.min((waterHeight - this.height) / maxHeight, 1);
+            int color = (int) (0x80 * (1 - ratio));
             cell = new RectangleImage(Cell.CELL_SIZE, Cell.CELL_SIZE, OutlineMode.SOLID,
                     new Color(color));
         }
@@ -54,14 +61,14 @@ class Cell {
             double ratio;
             int islandSize = ForbiddenIslandWorld.ISLAND_SIZE;
             int maxHeight = islandSize / 2;
-            if (this.height >= this.waterHeight) {
-                ratio = (this.height - this.waterHeight) / maxHeight;
+            if (this.height >= waterHeight) {
+                ratio = Math.min((this.height - waterHeight) / maxHeight, 1);
                 color += ((int) (0xFF * ratio) * 0x010000) +
                         ((int) (0x79 * ratio) * 0x0100) +
                         (int) (0xFF * ratio);
             }
             else {
-                ratio = (this.waterHeight - this.height) / maxHeight;
+                ratio = Math.min((waterHeight - this.height) / maxHeight, 1);
                 color = ((int) (0x80 * (1 - ratio)) * 0x0100) + ((int) (0x80 * ratio) * 0x010000);
             }
             cell = new RectangleImage(Cell.CELL_SIZE, Cell.CELL_SIZE, OutlineMode.SOLID,
@@ -74,7 +81,14 @@ class Cell {
     }
     
     void update(int waterHeight) {
-        this.waterHeight = waterHeight;
+        if (!this.isFlooded && this.height < waterHeight && this.isNextToFloodedCell()) {
+            this.setFlooded(true);
+        }
+    }
+    
+    boolean isNextToFloodedCell() {
+        return this.left.isFlooded || this.right.isFlooded ||
+                this.bottom.isFlooded || this.top.isFlooded;
     }
 }
 
@@ -82,8 +96,8 @@ class Cell {
 // A cell in the ocean.
 class OceanCell extends Cell {
     
-    OceanCell(int x, int y, int waterHeight) {
-        super(0, x, y, waterHeight);
+    OceanCell(int x, int y) {
+        super(0, x, y);
         this.isFlooded = true;
     }
     
@@ -103,7 +117,7 @@ class OceanCell extends Cell {
     
     @Override
     // Draws this ocean cell onto the given background.
-    WorldImage drawOnto(WorldImage background) {
+    WorldImage drawOnto(WorldImage background, int waterHeight) {
         return background;
     }
 }
@@ -113,7 +127,6 @@ class OceanCell extends Cell {
 // A board representing an island.
 class Board {
     ArrayList<ArrayList<Cell>> cells;
-    int waterHeight;
     
     Board() {
         this.makeMountainBoard();
@@ -175,20 +188,59 @@ class Board {
             ArrayList<Cell> newRow = new ArrayList<Cell>();
             for (int j = 0; j < ForbiddenIslandWorld.ISLAND_SIZE; j++) {
                 if (hRow.get(j) == 0) {
-                    newRow.add(new OceanCell(i, j, 0));
+                    newRow.add(new OceanCell(i, j));
                 }
                 else {
-                    newRow.add(new Cell(hRow.get(j), i, j, 0));
+                    newRow.add(new Cell(hRow.get(j), i, j));
                 }
             }
             result.add(newRow);
+        }
+        
+        for (int i = 0; i < ForbiddenIslandWorld.ISLAND_SIZE; i++) {
+            for (int j = 0; j < ForbiddenIslandWorld.ISLAND_SIZE; j++) {
+                Cell left, top, right, bottom; 
+                Cell curr = result.get(i).get(j);
+                if (onBoard(i, j - 1)) 
+                {
+                    left = result.get(i).get(j - 1);
+                }
+                else
+                {
+                    left = curr;
+                }
+                if (onBoard(i - 1, j))
+                {
+                    top = result.get(i - 1).get(j);
+                }
+                else
+                {
+                    top = curr;
+                }
+                if (onBoard(i, j + 1))
+                {
+                    right = result.get(i).get(j + 1);
+                }
+                else
+                {
+                    right = curr;
+                }
+                if (onBoard(i - 1, j))
+                {
+                    bottom = result.get(i -1).get(j);
+                }
+                else
+                {
+                    bottom = curr;
+                }
+                curr.setNeighbors(left, top, right, bottom);
+            }
         }
         
         return result;
     }
     
     void updateBoard(int waterHeight) {
-        this.waterHeight = waterHeight;
         for (ArrayList<Cell> row : cells) {
             for (Cell cell : row) {
                 cell.update(waterHeight);
@@ -198,16 +250,16 @@ class Board {
     
     boolean onBoard(int x, int y)
     {
-        return this.cells.get(y).size() <= x && x >= 0 && 
-                this.cells.size() <= y && y >= 0;
+        return ForbiddenIslandWorld.ISLAND_SIZE > x && x >= 0 && 
+                ForbiddenIslandWorld.ISLAND_SIZE > y && y >= 0;
     }
     
-    WorldImage drawOnto(WorldImage background) {
+    WorldImage drawOnto(WorldImage background, int waterHeight) {
         WorldImage image = background;
         
         for (ArrayList<Cell> row : cells) {
             for (Cell c : row) {
-                image = c.drawOnto(image);
+                image = c.drawOnto(image, waterHeight);
             }
         }
         
@@ -221,18 +273,25 @@ class Player
     int steps; // number of steps player has taken
     Board board;
 
+    Player(int x, int y, Board board) {
+        this.x = x;
+        this.y = y;
+        this.steps = 0;
+        this.board = board;
+    }
+    
     boolean canMove(String move)
     {
         switch (move)
         {
             case "up":
-                return board.onBoard(x, y + 1);
+                return board.notFlooded(x, y + 1);
             case "down":
-                return board.onBoard(x, y - 1);
+                return board.notFlooded(x, y - 1);
             case "left":
-                return board.onBoard(x - 1, y);
+                return board.notFlooded(x - 1, y);
             case "right":
-                return board.onBoard(x + 1, y);
+                return board.notFlooded(x + 1, y);
             default:
                 return false;
         }   
@@ -275,20 +334,19 @@ class Player
 class ForbiddenIslandWorld extends World
 {
     Board board; // all the cells
-    ArrayList<ArrayList<Double>> heights; // a record of all the cell's heights
-    ArrayList<String> undo1;
     int waterHeight; // the height of the water
     static final int ISLAND_SIZE = 64; // constant val
     static final int BACKGROUND_SIZE = Cell.CELL_SIZE * ISLAND_SIZE;
     Player player1;
     final int waterIncrease = 1;
+    int tick;
 
     ForbiddenIslandWorld()
     {
         this.board = new Board();
-        this.player1 = new Player();
-        // defaults as mountain island
-        // probably some code from the board class with the mountain
+        this.player1 = new Player(ISLAND_SIZE / 2, ISLAND_SIZE / 2, this.board);
+        this.waterHeight = 0;
+        this.tick = 0;
     }
 
 
@@ -301,20 +359,18 @@ class ForbiddenIslandWorld extends World
             case "left":
             case "right":
                 player1.move(key);
-                undo1.add(key);
                 break;
-            case "u": // undo
-                player1.move(this.oppositeDirection(undo1.get(undo1.size())));
-                undo1.remove(undo1.size());
-                break;
-            case "m":
+            case "m": // mountain island
                 board.makeMountainBoard();
+                this.waterHeight = 0;
                 break;
             case "r": // random island
                 board.makeDiamondBoard();
+                this.waterHeight = 0;
                 break;
             case "t": // terrain island
                 board.makeTerrainBoard();
+                this.waterHeight = 0;
                 break;
         }
     }
@@ -338,9 +394,11 @@ class ForbiddenIslandWorld extends World
 
     public void onTick()
     {
-        waterHeight += waterIncrease;
-        
-        board.updateBoard(this.waterHeight);
+        this.tick++;
+        if (tick % 10 == 0) {
+            waterHeight += waterIncrease;
+            board.updateBoard(this.waterHeight);
+        }
     }
 
     public WorldScene makeScene()
@@ -350,7 +408,7 @@ class ForbiddenIslandWorld extends World
                 this.board.drawOnto(
                         new RectangleImage(this.BACKGROUND_SIZE,
                                 this.BACKGROUND_SIZE,
-                                OutlineMode.SOLID, new Color(0x80)))),
+                                OutlineMode.SOLID, new Color(0x80)), this.waterHeight)),
                 this.BACKGROUND_SIZE / 2, this.BACKGROUND_SIZE / 2);
         return scene;
     }
@@ -362,13 +420,13 @@ class ExamplesIsland
     
     void testIsland(Tester t) {
         ForbiddenIslandWorld game = new ForbiddenIslandWorld();
-        game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE, ForbiddenIslandWorld.BACKGROUND_SIZE);
+        game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE, ForbiddenIslandWorld.BACKGROUND_SIZE, 0.0001);
     }
 
     public static void main(String[] args)
     {
         ForbiddenIslandWorld game = new ForbiddenIslandWorld();
-        game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE, ForbiddenIslandWorld.BACKGROUND_SIZE);
+        game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE, ForbiddenIslandWorld.BACKGROUND_SIZE, 0.01);
     }
 }
 
