@@ -62,7 +62,7 @@ class Cell {
             }
             else {
                 ratio = (this.waterHeight - this.height) / maxHeight;
-                color = ((int) (0x80 * (1 - ratio)) * 0x0100) + ((int) (0xFF * ratio) * 0x010000);
+                color = ((int) (0x80 * (1 - ratio)) * 0x0100) + ((int) (0x80 * ratio) * 0x010000);
             }
             cell = new RectangleImage(Cell.CELL_SIZE, Cell.CELL_SIZE, OutlineMode.SOLID,
                     new Color(color));
@@ -345,7 +345,7 @@ class ForbiddenIslandWorld extends World
         scene.placeImageXY(this.board.drawOnto(
                 new RectangleImage(this.BACKGROUND_SIZE,
                         this.BACKGROUND_SIZE,
-                        OutlineMode.SOLID, Color.BLUE)),
+                        OutlineMode.SOLID, new Color(0x80))),
                 this.BACKGROUND_SIZE / 2, this.BACKGROUND_SIZE / 2);
         return scene;
     }
