@@ -196,6 +196,12 @@ class Board {
         }
     }
     
+    boolean onBoard(int x, int y)
+    {
+        return this.cells.get(y).size() <= x && x >= 0 && 
+                this.cells.size() <= y && y >= 0;
+    }
+    
     WorldImage drawOnto(WorldImage background) {
         WorldImage image = background;
         
@@ -220,17 +226,15 @@ class Player
         switch (move)
         {
             case "up":
-                return board.getCell(x, y + 1) != null;
-                break;
+                return board.onBoard(x, y + 1);
             case "down":
-                return board.getCell(x, y - 1) != null;
-                break;
+                return board.onBoard(x, y - 1);
             case "left":
-                return board.getCell(x - 1, y) != null;
-                break;
+                return board.onBoard(x - 1, y);
             case "right":
-                return board.getCell(x + 1, y) != null;
-                break;
+                return board.onBoard(x + 1, y);
+            default:
+                return false;
         }   
     }
 
