@@ -76,8 +76,8 @@ class Cell {
                     new Color(color));
         }
         return new OverlayOffsetImage(cell,
-                this.x * Cell.CELL_SIZE - ForbiddenIslandWorld.BACKGROUND_SIZE / 2,
-                this.y * Cell.CELL_SIZE - ForbiddenIslandWorld.BACKGROUND_SIZE / 2,
+                this.x * Cell.CELL_SIZE - ForbiddenIslandWorld.BACKGROUND_SIZE / 2.0,
+                this.y * Cell.CELL_SIZE - ForbiddenIslandWorld.BACKGROUND_SIZE / 2.0,
                 background);
     }
     
@@ -242,15 +242,22 @@ class Board {
             heights.get(rmin).set(midCol, t);
             heights.get(rmax).set(midCol, b);
             heights.get(midRow).set(midCol, m);
+            
+            heights = this.makeTerrainBoardHelper(heights, midRow, rmax, midCol, cmax, var / 4);
+            heights = this.makeTerrainBoardHelper(heights, midRow, rmax, cmin, midCol, var / 4);
+            heights = this.makeTerrainBoardHelper(heights, rmin, midRow, midCol, cmax, var / 4);
+            heights = this.makeTerrainBoardHelper(heights, rmin, midRow, cmin, midCol, var / 4);
         }
         else {
-            return heights;
+            if (rmax - rmin >= 2) {
+                heights = this.makeTerrainBoardHelper(heights, rmin, midRow, cmin, cmax, var / 4);
+                heights = this.makeTerrainBoardHelper(heights, midRow, rmax, cmin, cmax, var / 4);
+            }
+            else if (cmax - cmin >= 2) {
+                heights = this.makeTerrainBoardHelper(heights, rmin, rmax, cmin, midCol, var / 4);
+                heights = this.makeTerrainBoardHelper(heights, rmin, rmax, midCol, cmax, var / 4);
+            }
         }
-        
-        heights = this.makeTerrainBoardHelper(heights, midRow, rmax, midCol, cmax, var / 4);
-        heights = this.makeTerrainBoardHelper(heights, midRow, rmax, cmin, midCol, var / 4);
-        heights = this.makeTerrainBoardHelper(heights, rmin, midRow, midCol, cmax, var / 4);
-        heights = this.makeTerrainBoardHelper(heights, rmin, midRow, cmin, midCol, var / 4);
         
         return heights;
     }
