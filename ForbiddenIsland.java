@@ -258,7 +258,8 @@ class Player
                     break;
                 default:
                     break;
-            }   
+            }
+            this.steps++;
         }
     }
 
