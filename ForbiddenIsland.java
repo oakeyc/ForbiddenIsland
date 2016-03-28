@@ -177,7 +177,13 @@ class Board {
     }
     
     void makeTerrainBoard() {
-        
+        ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
+        for (int i = 0; i < ForbiddenIslandWorld.ISLAND_SIZE; i++) {
+            ArrayList<Double> row = new ArrayList<Double>();
+            for (int j = 0; j < ForbiddenIslandWorld.ISLAND_SIZE; j++) {
+                
+            }
+        }
     }
     
     ArrayList<ArrayList<Cell>> doubleListToCellList(ArrayList<ArrayList<Double>> heights) {
