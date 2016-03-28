@@ -1,22 +1,24 @@
 import java.util.ArrayList; 
 import java.util.Random;
-
 import tester.*; 
 import javalib.impworld.*; 
-
 import java.awt.Color; 
-
 import javalib.worldimages.*; 
 
 // A cell of land.
 class Cell {
+<<<<<<< HEAD
     static final int CELL_SIZE = 5;
     
+=======
+    static final int CELL_SIZE = 15; // size of the drawn cell
+>>>>>>> origin/master
     double height;
-    int x, y;
-    Cell left, top, right, bottom;
-    boolean isFlooded, hasPart;
+    int x, y; // position
+    Cell left, top, right, bottom; // neighboring cells
+    boolean isFlooded, hasPart; // is flooded with water, has a helicopter part
     
+    // initializes data
     Cell(double height, int x, int y) {
         this.height = height;
         this.x = x;
@@ -26,11 +28,14 @@ class Cell {
         this.left = this.top = this.right = this.bottom = null;
     }
     
+    // takes in a new state for flooded
     // EFFECT: Sets the flooded state of this cell to the given boolean.
     void setFlooded(boolean isFlooded) {
         this.isFlooded = isFlooded;
     }
     
+    // takes in neighboring cells
+    // EFFECT: sets this neighboring cells to those
     void setNeighbors(Cell left, Cell top, Cell right, Cell bottom) {
         this.left = left;
         this.top = top;
@@ -46,7 +51,8 @@ class Cell {
         return this.height - that.height;
     }
     
-    // Draws this cell onto the given background.
+    // Draws this cell onto the given background
+    // changes the colors according to the height and waterheight
     WorldImage drawOnto(WorldImage background, int waterHeight) {
         WorldImage cell;
         if (this.isFlooded) {
@@ -80,12 +86,15 @@ class Cell {
                 background);
     }
     
+    // takes in a waterheight, figures out if this cell has flooded
+    // EFFECT: could change the isFlooded
     void update(int waterHeight) {
         if (!this.isFlooded && this.height < waterHeight && this.isNextToFloodedCell()) {
             this.setFlooded(true);
         }
     }
     
+    // whether this cell neightbors a flooded cell
     boolean isNextToFloodedCell() {
         return this.left.isFlooded || this.right.isFlooded ||
                 this.bottom.isFlooded || this.top.isFlooded;
@@ -96,16 +105,15 @@ class Cell {
 // A cell in the ocean.
 class OceanCell extends Cell {
     
+    // initializes data
     OceanCell(int x, int y) {
         super(0, x, y);
-        this.isFlooded = true;
+        this.isFlooded = true; // always true
     }
     
-    @Override
     // EFFECT: Sets the flooded state of this ocean cell, which is always true.
     void setFlooded(boolean isFlooded) {}
     
-    @Override
     // compares the height of this ocean cell to the height of that cell.
     //  Returns: the height of that cell, which is
     //           0  if height of that is even with ocean level.
@@ -115,23 +123,23 @@ class OceanCell extends Cell {
         return that.height;
     }
     
-    @Override
     // Draws this ocean cell onto the given background.
     WorldImage drawOnto(WorldImage background, int waterHeight) {
         return background;
     }
 }
 
-
-
 // A board representing an island.
 class Board {
+    // the matrix holding all the cells
     ArrayList<ArrayList<Cell>> cells;
     
+    // defaults a mountain board
     Board() {
         this.makeMountainBoard();
     }
     
+    // creates a mountain, where the highest point is the center
     void makeMountainBoard() {
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         double middle = ForbiddenIslandWorld.ISLAND_SIZE / 2.0;
@@ -149,11 +157,11 @@ class Board {
             }
             heights.add(row);
         }
-        
+        // creates the cells based on the heights given
         this.cells = this.doubleListToCellList(heights);
     }
 
-    
+    // makes a diamond board with random heights all around
     void makeDiamondBoard() {
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         double middle = ForbiddenIslandWorld.ISLAND_SIZE / 2.0;
@@ -172,10 +180,11 @@ class Board {
             }
             heights.add(row);
         }
-        
+        // creates the cells based on the heights given
         this.cells = this.doubleListToCellList(heights);
     }
     
+    // makes a random terrain board
     void makeTerrainBoard() {
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         for (int i = 0; i < ForbiddenIslandWorld.ISLAND_SIZE; i++) {
@@ -251,6 +260,8 @@ class Board {
         return heights;
     }
     
+    // takes in a matrix of heights, creates a matrix of cells based on those heights
+    // EFFECT: initializes the matrix of cells
     ArrayList<ArrayList<Cell>> doubleListToCellList(ArrayList<ArrayList<Double>> heights) {
         ArrayList<ArrayList<Cell>> result = new ArrayList<ArrayList<Cell>>();
         
@@ -268,6 +279,7 @@ class Board {
             result.add(newRow);
         }
         
+        // updates the neighboring cells for each cell
         for (int i = 0; i < ForbiddenIslandWorld.ISLAND_SIZE; i++) {
             for (int j = 0; j < ForbiddenIslandWorld.ISLAND_SIZE; j++) {
                 Cell left, top, right, bottom; 
@@ -311,6 +323,8 @@ class Board {
         return result;
     }
     
+    // updates all the cells on the board given a new water height
+    // EFFECT: changes the states of the cells
     void updateBoard(int waterHeight) {
         for (ArrayList<Cell> row : cells) {
             for (Cell cell : row) {
@@ -319,12 +333,14 @@ class Board {
         }
     }
     
+    // given a position, returns whether it is on the board or not
     boolean onBoard(int x, int y)
     {
         return ForbiddenIslandWorld.ISLAND_SIZE > x && x >= 0 && 
                 ForbiddenIslandWorld.ISLAND_SIZE > y && y >= 0;
     }
     
+    // given an image and a water height, draws this board onto the image
     WorldImage drawOnto(WorldImage background, int waterHeight) {
         WorldImage image = background;
         
@@ -338,12 +354,14 @@ class Board {
     }
 }
 
+// represents a player
 class Player
 {
-    int x, y;
+    int x, y; // position
     int steps; // number of steps player has taken
-    Board board;
+    Board board; // this board it is on
 
+    // initializes data
     Player(int x, int y, Board board) {
         this.x = x;
         this.y = y;
@@ -351,6 +369,7 @@ class Player
         this.board = board;
     }
     
+    // whether the next spot is valid
     boolean canMove(String move)
     {
         switch (move)
@@ -368,6 +387,7 @@ class Player
         }   
     }
 
+    // moves this player given a direction
     void move(String move)
     {
         if (canMove(move))
@@ -393,6 +413,7 @@ class Player
         }
     }
 
+    // given an image, it draws this image onto it
     WorldImage drawOnto(WorldImage background)
     {
         return new OverlayImage(
@@ -402,6 +423,7 @@ class Player
     }
 }
 
+// represents a forbidden island game that is aw world
 class ForbiddenIslandWorld extends World
 {
     Board board; // all the cells
@@ -410,8 +432,9 @@ class ForbiddenIslandWorld extends World
     static final int BACKGROUND_SIZE = Cell.CELL_SIZE * 3 * ISLAND_SIZE;
     Player player1;
     final int waterIncrease = 1;
-    int tick;
+    int tick; // time
 
+    // initializes data
     ForbiddenIslandWorld()
     {
         this.board = new Board();
@@ -420,7 +443,7 @@ class ForbiddenIslandWorld extends World
         this.tick = 0;
     }
 
-
+    // changes the state of the world given a key stroke
     public void onKeyEvent(String key)
     {
         switch(key)
@@ -429,7 +452,7 @@ class ForbiddenIslandWorld extends World
             case "down":
             case "left":
             case "right":
-                player1.move(key);
+                player1.move(key); // moves the player
                 break;
             case "m": // mountain island
                 board.makeMountainBoard();
@@ -446,6 +469,7 @@ class ForbiddenIslandWorld extends World
         }
     }
     
+    // returns the opposite direction of the given string
     String oppositeDirection(String dir)
     {
         switch (dir)
@@ -463,6 +487,8 @@ class ForbiddenIslandWorld extends World
         }
     }
 
+    // changes the state of the world
+    // EFFECT: increases the water height and updates the board
     public void onTick()
     {
         this.tick++;
@@ -472,6 +498,7 @@ class ForbiddenIslandWorld extends World
         }
     }
 
+    // makes the scene with all the images
     public WorldScene makeScene()
     {
         WorldScene scene = this.getEmptyScene();
@@ -485,15 +512,16 @@ class ForbiddenIslandWorld extends World
     }
 }
 
-
+// represents examples for the forbidenisland
 class ExamplesIsland 
 {
-    
+    // tests the island
     void testIsland(Tester t) {
         ForbiddenIslandWorld game = new ForbiddenIslandWorld();
         game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE, ForbiddenIslandWorld.BACKGROUND_SIZE, 0.0001);
     }
 
+    // main, runs the class
     public static void main(String[] args)
     {
         ForbiddenIslandWorld game = new ForbiddenIslandWorld();
