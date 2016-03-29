@@ -2,9 +2,6 @@ import java.util.ArrayList;
 import java.util.Random;
 import tester.*; 
 import javalib.impworld.*;
-import javalib.worldcanvas.WorldCanvas;
-import javalib.worldcanvas.WorldSceneBase;
-
 import java.awt.Color; 
 import javalib.worldimages.*; 
 
@@ -224,6 +221,7 @@ class Board {
         this.cells = this.doubleListToCellList(heights);
     }
 
+    // makes a random terrain border
     ArrayList<ArrayList<Double>> makeTerrainBoardHelper
     (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax, double var) {
         Random rand = new Random();
@@ -345,6 +343,8 @@ class Board {
                 ForbiddenIslandWorld.ISLAND_SIZE > y && y >= 0;
     }
 
+    // takes in a position
+    // returns whether a cell is flooded
     boolean notFlooded(int x, int y)
     {
         return !cells.get(y).get(x).isFlooded;
@@ -538,9 +538,10 @@ class ForbiddenIslandWorld extends World
         return new WorldEnd(false, this.makeScene());
     }
     
+    // returns the game over screen
     public WorldImage lastImage()
     {
-        return new TextImage("GAME OVER\nPlayer1's steps: " + player1.steps,
+        return new TextImage("GAME OVER! Player's steps: " + player1.steps,
                 60, Color.MAGENTA);
     }
 }
