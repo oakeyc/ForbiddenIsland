@@ -9,15 +9,15 @@ import javalib.worldimages.*;
 class Cell {
     static final int CELL_SIZE = 15; // size of the drawn cell
     double height;
-    int x, y; // position
+    int r, c; // position
     Cell left, top, right, bottom; // neighboring cells
     boolean isFlooded, willFlood, hasPart; // is flooded with water has a helicopter part
 
     // initializes data
-    Cell(double height, int x, int y) {
+    Cell(double height, int r, int c) {
         this.height = height;
-        this.x = x;
-        this.y = y;
+        this.r = r;
+        this.c = c;
         this.isFlooded = false;
         this.hasPart = false;
         this.left = this.top = this.right = this.bottom = null;
@@ -76,8 +76,8 @@ class Cell {
                     new Color(color));
         }
         return new OverlayOffsetImage(cell,
-                this.x * Cell.CELL_SIZE - ForbiddenIslandWorld.BACKGROUND_SIZE / 2,
-                this.y * Cell.CELL_SIZE - ForbiddenIslandWorld.BACKGROUND_SIZE / 2,
+                this.c * Cell.CELL_SIZE - ForbiddenIslandWorld.BACKGROUND_SIZE / 2.0,
+                this.r * Cell.CELL_SIZE - ForbiddenIslandWorld.BACKGROUND_SIZE / 2.0,
                 background);
     }
     
@@ -91,7 +91,7 @@ class Cell {
     // takes in a waterheight, figures out if this cell has flooded
     // EFFECT: could change the isFlooded
     void update() {
-        if (willFlood) {
+        if (this.willFlood) {
             this.setFlooded(true);
         }
         this.willFlood = false;
@@ -189,14 +189,18 @@ class Board {
 
  // makes a random terrain board
     void makeTerrainBoard() {
+        System.out.println("Terrain");
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         for (int i = 0; i < ForbiddenIslandWorld.ISLAND_SIZE; i++) {
             ArrayList<Double> row = new ArrayList<Double>();
             for (int j = 0; j < ForbiddenIslandWorld.ISLAND_SIZE; j++) {
                 row.add(0.0);
             }
+            System.out.print(row.size() + ", ");
             heights.add(row);
         }
+        System.out.println();
+        System.out.println(heights.size());
 
         int max = ForbiddenIslandWorld.ISLAND_SIZE;
         int mid = max / 2;
@@ -276,11 +280,11 @@ class Board {
             heights.get(midRow).set(midCol, m);
 
             heights = this.makeTerrainHelper(heights, rmin, midRow, cmin, midCol,
-                    onLeft, onTop, false, false);
+                    onLeft, onTop, onRight, onBot);
             heights = this.makeTerrainHelper(heights, rmin, midRow, midCol, cmax,
-                    false, onTop, onRight, false);
+                    false, onTop, onRight, onBot);
             heights = this.makeTerrainHelper(heights, midRow, rmax, cmin, midCol,
-                    onLeft, false, false, onBot);
+                    onLeft, false, onRight, onBot);
             heights = this.makeTerrainHelper(heights, midRow, rmax, midCol, cmax,
                     false, false, onRight, onBot);
         }
@@ -289,7 +293,7 @@ class Board {
                 heights.get(midRow).set(cmin, l);
                 heights.get(midRow).set(cmax, r);                
                 heights = this.makeTerrainHelper(heights, rmin, midRow, cmin, cmax,
-                        onLeft, onTop, onRight, false);
+                        onLeft, onTop, onRight, onBot);
                 heights = this.makeTerrainHelper(heights, midRow, rmax, cmin, cmax,
                         onLeft, false, onRight, onBot);
             }
@@ -297,7 +301,7 @@ class Board {
                 heights.get(rmin).set(midCol, t);
                 heights.get(rmax).set(midCol, b);
                 heights = this.makeTerrainHelper(heights, rmin, rmax, cmin, midCol,
-                        onLeft, onTop, false, onBot);
+                        onLeft, onTop, onRight, onBot);
                 heights = this.makeTerrainHelper(heights, rmin, rmax, midCol, cmax,
                         false, onTop, onRight, onBot);
             }
@@ -627,14 +631,17 @@ class ForbiddenIslandWorld extends World
             case "m": // mountain island
                 board.makeMountainBoard();
                 this.waterHeight = 0;
+                this.tick = 0;
                 break;
             case "r": // random island
                 board.makeDiamondBoard();
                 this.waterHeight = 0;
+                this.tick = 0;
                 break;
             case "t": // terrain island
                 board.makeTerrainBoard();
                 this.waterHeight = 0;
+                this.tick = 0;
                 break;
         }
     }
@@ -745,7 +752,7 @@ class ExamplesIsland
         b2 = new Board();
         b3 = new Board();
     }
-
+/*
     // tests compare height
     boolean testCellCompareHeight(Tester t)
     {
@@ -776,7 +783,7 @@ class ExamplesIsland
         boolean c4nf1 = c4.isNextToFloodedCell();
 
         return t.checkExpect(c4nf, false) && t.checkExpect(c4nf1, true);
-    }
+    }*/
 
     // tests the island
     void testIsland(Tester t) {
@@ -785,10 +792,8 @@ class ExamplesIsland
                 ForbiddenIslandWorld.BACKGROUND_SIZE,
                 0.01);
     }
-
-    // main, runs the class
-    public static void main(String[] args)
-    {
+ // main, runs the class
+    public static void main(String[] args) {
         ForbiddenIslandWorld game = new ForbiddenIslandWorld();
         game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE,
                 ForbiddenIslandWorld.BACKGROUND_SIZE,
