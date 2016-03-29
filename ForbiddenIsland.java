@@ -559,6 +559,10 @@ class ExamplesIsland
     Cell c4r;
     Cell c4l;
     
+    Board b1;
+    Board b2;
+    Board b3;
+    
     // initializes the data for testing
     void cellInit()
     {
@@ -571,6 +575,14 @@ class ExamplesIsland
         c4r = new Cell(13, 6, 5);
         c4l = new Cell(11, 4, 5);
         c4.setNeighbors(c4l, c4t, c4r, c4b);
+    }
+    
+    // initializes the board data
+    void boardInit()
+    {
+        b1 = new Board();
+        b2 = new Board();
+        b3 = new Board();
     }
     
     // tests compare height
