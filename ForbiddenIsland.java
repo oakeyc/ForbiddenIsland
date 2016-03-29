@@ -198,32 +198,242 @@ class Board {
             heights.add(row);
         }
 
-        int mid = ForbiddenIslandWorld.ISLAND_SIZE / 2;
+        int max = ForbiddenIslandWorld.ISLAND_SIZE;
+        int mid = max / 2;
 
-        heights.get(mid)
-        .set(0, 1.0);
-        heights.get(mid)
-        .set(ForbiddenIslandWorld.ISLAND_SIZE - 1, 1.0);
-        heights.get(0)
-        .set(mid, 1.0);
-        heights.get(ForbiddenIslandWorld.ISLAND_SIZE - 1)
-        .set(ForbiddenIslandWorld.ISLAND_SIZE / 2, 1.0);
+        heights.get(mid).set(0, 1.0);
+        heights.get(mid).set(max - 1, 1.0);
+        heights.get(0).set(mid, 1.0);
+        heights.get(max - 1).set(mid, 1.0);
         heights.get(mid).set(mid, ForbiddenIslandWorld.ISLAND_SIZE / 2.0);
-
-        heights = this.makeTerrainBoardHelper(heights,
-                0, mid,
-                0, mid);
-        heights = this.makeTerrainBoardHelper(heights,
-                0, mid,
-                mid, ForbiddenIslandWorld.ISLAND_SIZE - 1);
-        heights = this.makeTerrainBoardHelper(heights,
-                mid, ForbiddenIslandWorld.ISLAND_SIZE - 1,
-                0, mid);
-        heights = this.makeTerrainBoardHelper(heights,
-                mid, ForbiddenIslandWorld.ISLAND_SIZE - 1,
-                mid, ForbiddenIslandWorld.ISLAND_SIZE - 1);
+        
+        heights = this.makeTerrainHelper(heights, 0, mid, 0, mid,
+                true, true, true, true);
+        heights = this.makeTerrainHelper(heights, 0, mid, mid, max - 1,
+                false, true, true, true);
+        heights = this.makeTerrainHelper(heights, mid, max - 1, 0, mid,
+                true, false, true, true);
+        heights = this.makeTerrainHelper(heights, mid, max, mid, max - 1,
+                false, false, true, true);
 
         this.cells = this.doubleListToCellList(heights);
+    }
+    
+    
+    ArrayList<ArrayList<Double>> makeTerrainHelper
+    (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax,
+            boolean onLeft, boolean onRight, boolean onTop, boolean onBot) {
+        Random rand = new Random();
+        double var = ((rmax - rmin) * (cmax - cmin)) / (ForbiddenIslandWorld.ISLAND_SIZE / 2);
+        
+        Double tl = heights.get(rmin).get(cmin);
+        Double tr = heights.get(rmin).get(cmax);
+        Double bl = heights.get(rmax).get(cmin);
+        Double br = heights.get(rmax).get(cmax);
+        
+        int midCol = (cmin + cmax) / 2;
+        int midRow = (rmin + rmax) / 2;
+        
+        Double l, t, r, b;
+        
+        if (onLeft) {
+            l = rand.nextDouble() * 2 * var - var + (tl + bl) / 2;
+            if (l < 0) l = 0.0;
+        }
+        else {
+            l = heights.get(midRow).get(cmin);
+        }
+        if (onTop) {
+            t = rand.nextDouble() * 2 * var - var + (tl + tr) / 2;
+            if (t < 0) t = 0.0;
+        }
+        else {
+            t = heights.get(rmin).get(midCol);
+        }
+        if (onRight) {
+            r = rand.nextDouble() * 2 * var - var + (tr + br) / 2;
+            if (r < 0) r = 0.0;
+        }
+        else {
+            r = heights.get(midRow).get(cmax);
+        }
+        if (onBot) {
+            b = rand.nextDouble() * 2 * var - var + (bl + br) / 2;
+            if (b < 0) b = 0.0;
+        }
+        else {
+            b = heights.get(rmax).get(midCol);
+        }
+        
+        Double m = rand.nextDouble() * 2 * var - var + (l + t + r + b) / 4;
+        if (m < 0) m = 0.0;
+        
+        if (rmax - rmin >= 2  && cmax - cmin >= 2) {
+            heights.get(midRow).set(cmin, l);
+            heights.get(midRow).set(cmax, r);
+            heights.get(rmin).set(midCol, t);
+            heights.get(rmax).set(midCol, b);
+            heights.get(midRow).set(midCol, m);
+
+            heights = this.makeTerrainHelper(heights, rmin, midRow, cmin, midCol,
+                    onLeft, onTop, false, false);
+            heights = this.makeTerrainHelper(heights, rmin, midRow, midCol, cmax,
+                    false, onTop, onRight, false);
+            heights = this.makeTerrainHelper(heights, midRow, rmax, cmin, midCol,
+                    onLeft, false, false, onBot);
+            heights = this.makeTerrainHelper(heights, midRow, rmax, midCol, cmax,
+                    false, false, onRight, onBot);
+        }
+        else {
+            if (rmax - rmin >= 2) {
+                heights.get(midRow).set(cmin, l);
+                heights.get(midRow).set(cmax, r);                
+                heights = this.makeTerrainHelper(heights, rmin, midRow, cmin, cmax,
+                        onLeft, onTop, onRight, false);
+                heights = this.makeTerrainHelper(heights, midRow, rmax, cmin, cmax,
+                        onLeft, false, onRight, onBot);
+            }
+            else if (cmax - cmin >= 2) {
+                heights.get(rmin).set(midCol, t);
+                heights.get(rmax).set(midCol, b);
+                heights = this.makeTerrainHelper(heights, rmin, rmax, cmin, midCol,
+                        onLeft, onTop, false, onBot);
+                heights = this.makeTerrainHelper(heights, rmin, rmax, midCol, cmax,
+                        false, onTop, onRight, onBot);
+            }
+        }
+
+        return heights;
+    }
+    
+    
+    ArrayList<ArrayList<Double>> makeTerrainTLQuad
+    (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax) {
+        Random rand = new Random();
+        double var = ((rmax - rmin) * (cmax - cmin)) / (ForbiddenIslandWorld.ISLAND_SIZE / 2);
+        
+        Double tl = heights.get(rmin).get(cmin);
+        Double tr = heights.get(rmin).get(cmax);
+        Double bl = heights.get(rmax).get(cmin);
+        Double br = heights.get(rmax).get(cmax);
+
+        Double l = rand.nextDouble() * 2 * var - var + (tl + bl) / 2;
+        if (l < 0) l = 0.0;
+        Double t = rand.nextDouble() * 2 * var - var + (tl + tr) / 2;
+        if (t < 0) t = 0.0;
+        Double r = rand.nextDouble() * 2 * var - var + (tr + br) / 2;
+        if (r < 0) r = 0.0;
+        Double b = rand.nextDouble() * 2 * var - var + (bl + br) / 2;
+        if (b < 0) b = 0.0;
+        Double m = rand.nextDouble() * 2 * var - var + (l + t + r + b) / 4;
+        if (m < 0) m = 0.0;
+        
+        return this.makeTerrainQuadHelp(heights, rmin,rmax, cmin, cmax, l, t, r, b, m);
+    }
+    
+    ArrayList<ArrayList<Double>> makeTerrainTRQuad
+    (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax) {
+        Random rand = new Random();
+        double var = ((rmax - rmin) * (cmax - cmin)) / (ForbiddenIslandWorld.ISLAND_SIZE / 2);
+        
+        Double tl = heights.get(rmin).get(cmin);
+        Double tr = heights.get(rmin).get(cmax);
+        Double bl = heights.get(rmax).get(cmin);
+        Double br = heights.get(rmax).get(cmax);
+        
+        Double l = heights.get((rmin + rmax) / 2).get(cmin);
+        Double t = rand.nextDouble() * 2 * var - var + (tl + tr) / 2;
+        if (t < 0) t = 0.0;
+        Double r = rand.nextDouble() * 2 * var - var + (tr + br) / 2;
+        if (r < 0) r = 0.0;
+        Double b = rand.nextDouble() * 2 * var - var + (bl + br) / 2;
+        if (b < 0) b = 0.0;
+        Double m = rand.nextDouble() * 2 * var - var + (l + t + r + b) / 4;
+        if (m < 0) m = 0.0;
+        
+        return this.makeTerrainQuadHelp(heights, rmin,rmax, cmin, cmax, l, t, r, b, m);
+    }
+    
+    ArrayList<ArrayList<Double>> makeTerrainBLQuad
+    (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax) {
+        Random rand = new Random();
+        double var = ((rmax - rmin) * (cmax - cmin)) / (ForbiddenIslandWorld.ISLAND_SIZE / 2);
+        
+        Double tl = heights.get(rmin).get(cmin);
+        Double tr = heights.get(rmin).get(cmax);
+        Double bl = heights.get(rmax).get(cmin);
+        Double br = heights.get(rmax).get(cmax);
+        
+        Double l = rand.nextDouble() * 2 * var - var + (tl + bl) / 2;
+        if (l < 0) l = 0.0;
+        Double t = heights.get(rmin).get((cmin + cmax) / 2);
+        Double r = rand.nextDouble() * 2 * var - var + (tr + br) / 2;
+        if (r < 0) r = 0.0;
+        Double b = rand.nextDouble() * 2 * var - var + (bl + br) / 2;
+        if (b < 0) b = 0.0;
+        Double m = rand.nextDouble() * 2 * var - var + (l + t + r + b) / 4;
+        if (m < 0) m = 0.0;
+
+        return this.makeTerrainQuadHelp(heights, rmin,rmax, cmin, cmax, l, t, r, b, m);
+    }
+    
+    ArrayList<ArrayList<Double>> makeTerrainBRQuad
+    (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax) {
+        Random rand = new Random();
+        double var = ((rmax - rmin) * (cmax - cmin)) / (ForbiddenIslandWorld.ISLAND_SIZE / 2);
+        
+        Double tl = heights.get(rmin).get(cmin);
+        Double tr = heights.get(rmin).get(cmax);
+        Double bl = heights.get(rmax).get(cmin);
+        Double br = heights.get(rmax).get(cmax);
+        
+        Double l = heights.get((rmin + rmax) / 2).get(cmin);
+        Double t = heights.get(rmin).get((cmin + cmax) / 2);
+        Double r = rand.nextDouble() * 2 * var - var + (tr + br) / 2;
+        if (r < 0) r = 0.0;
+        Double b = rand.nextDouble() * 2 * var - var + (bl + br) / 2;
+        if (b < 0) b = 0.0;
+        Double m = rand.nextDouble() * 2 * var - var + (l + t + r + b) / 4;
+        if (m < 0) m = 0.0;
+
+        return this.makeTerrainQuadHelp(heights, rmin,rmax, cmin, cmax, l, t, r, b, m);
+    }
+    
+    ArrayList<ArrayList<Double>> makeTerrainQuadHelp
+    (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax,
+            double l, double t, double r, double b, double m) {
+
+        int midCol = (cmin + cmax) / 2;
+        int midRow = (rmin + rmax) / 2;
+        
+        if (rmax - rmin >= 2  && cmax - cmin >= 2) {
+            heights.get(midRow).set(cmin, l);
+            heights.get(midRow).set(cmax, r);
+            heights.get(rmin).set(midCol, t);
+            heights.get(rmax).set(midCol, b);
+            heights.get(midRow).set(midCol, m);
+
+            heights = this.makeTerrainTLQuad(heights, rmin, midRow, cmin, midCol);
+            heights = this.makeTerrainTRQuad(heights, rmin, midRow, midCol, cmax);
+            heights = this.makeTerrainBLQuad(heights, midRow, rmax, cmin, midCol);
+            heights = this.makeTerrainBRQuad(heights, midRow, rmax, midCol, cmax);
+        }
+        else {
+            if (rmax - rmin >= 2) {
+                heights.get(midRow).set(cmin, l);
+                heights.get(midRow).set(cmax, r);
+                heights = this.makeTerrainTLQuad(heights, rmin, midRow, cmin, cmax);
+                heights = this.makeTerrainBLQuad(heights, midRow, rmax, cmin, cmax);
+            }
+            else if (cmax - cmin >= 2) {
+                heights.get(rmin).set(midCol, t);
+                heights.get(rmax).set(midCol, b);
+                heights = this.makeTerrainTLQuad(heights, rmin, rmax, cmin, midCol);
+                heights = this.makeTerrainTRQuad(heights, rmin, rmax, midCol, cmax);
+            }
+        }
+        
+        return heights;
     }
     
     /// testing
