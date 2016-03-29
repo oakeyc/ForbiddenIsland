@@ -508,6 +508,7 @@ class ForbiddenIslandWorld extends World
             waterHeight += waterIncrease;
             board.updateBoard(this.waterHeight);
         }
+        this.makeScene();
     }
 
     // makes the scene with all the images
@@ -549,6 +550,61 @@ class ForbiddenIslandWorld extends World
 // represents examples for the forbidenisland
 class ExamplesIsland 
 {
+    Cell c1;
+    Cell c2;
+    Cell c3; 
+    Cell c4;
+    Cell c4t;
+    Cell c4b;
+    Cell c4r;
+    Cell c4l;
+    
+    // initializes the data for testing
+    void cellInit()
+    {
+        c1 = new Cell(0, 0, 0);
+        c2 = new Cell(5, 0, 0);
+        c3 = new Cell(10, 10, 15);
+        c4 = new Cell(12, 5, 5);
+        c4t = new Cell(13, 5, 4);
+        c4b = new Cell(11, 5, 6);
+        c4r = new Cell(13, 6, 5);
+        c4l = new Cell(11, 4, 5);
+        c4.setNeighbors(c4l, c4t, c4r, c4b);
+    }
+    
+    // tests compare height
+    boolean testCellCompareHeight(Tester t)
+    {
+        cellInit();
+        return t.checkExpect(c1.compareHeight(c2), -5.0) && t.checkExpect(c2.compareHeight(c1), 5.0);
+    }
+    
+    // tests cell updating
+    boolean testCellUpdate(Tester t)
+    {
+        cellInit();
+        c4.update(10);
+        boolean c4u = c4.isFlooded;
+        c4r.setFlooded(true);
+        c4.update(30);
+        boolean c4u2 = c4.isFlooded;
+        
+        return t.checkExpect(c4u, false) && t.checkExpect(c4u2, true);
+    }
+    
+    // tests is next to flooded cell
+    boolean testIsNextToFloodedCell(Tester t)
+    {
+        cellInit();
+        
+        boolean c4nf = c4.isNextToFloodedCell();
+        c4b.setFlooded(true);
+        boolean c4nf1 = c4.isNextToFloodedCell();
+        
+        return t.checkExpect(c4nf, false) && t.checkExpect(c4nf1, true);
+    }
+    
     // tests the island
     void testIsland(Tester t) {
         ForbiddenIslandWorld game = new ForbiddenIslandWorld();
