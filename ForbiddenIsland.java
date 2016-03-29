@@ -279,6 +279,7 @@ class Board {
 
         return heights;
     }
+    
 
     // makes a random terrain border
 //    ArrayList<ArrayList<Double>> makeTerrainBoardHelper
@@ -291,7 +292,7 @@ class Board {
 //        Double bl = heights.get(rmax).get(cmin);
 //        Double br = heights.get(rmax).get(cmax);
 //        
-//        int midCol = (cmin + cmax) / 2;
+//        int midCol = (cmin + cmax) / 2;r
 //        int midRow = (rmin + rmax) / 2;
 //        Double l = rand.nextDouble() * 2 * var - var + (tl + bl) / 2;
 //        if (l < 0) l = 0.0;
