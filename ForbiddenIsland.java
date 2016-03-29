@@ -1,7 +1,10 @@
 import java.util.ArrayList; 
 import java.util.Random;
 import tester.*; 
-import javalib.impworld.*; 
+import javalib.impworld.*;
+import javalib.worldcanvas.WorldCanvas;
+import javalib.worldcanvas.WorldSceneBase;
+
 import java.awt.Color; 
 import javalib.worldimages.*; 
 
@@ -518,6 +521,27 @@ class ForbiddenIslandWorld extends World
                                 OutlineMode.SOLID, new Color(0x80)), this.waterHeight)),
                 this.BACKGROUND_SIZE / 2, this.BACKGROUND_SIZE / 2);
         return scene;
+    }
+
+    // when the games over
+    // the player drowns
+    public WorldEnd worldEnds()
+    {
+        if (!board.notFlooded(player1.x, player1.y))
+        {
+            WorldScene scene = this.getEmptyScene();
+            scene.placeImageXY(this.lastImage(), 
+                    this.BACKGROUND_SIZE / 2, this.BACKGROUND_SIZE / 2);
+            
+            return new WorldEnd(true, scene);
+        }
+        return new WorldEnd(false, this.makeScene());
+    }
+    
+    public WorldImage lastImage()
+    {
+        return new TextImage("GAME OVER\nPlayer1's steps: " + player1.steps,
+                60, Color.MAGENTA);
     }
 }
 
