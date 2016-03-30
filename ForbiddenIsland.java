@@ -1,8 +1,12 @@
 import java.util.ArrayList; 
+import java.util.Iterator;
 import java.util.Random;
+
 import tester.*; 
 import javalib.impworld.*;
+
 import java.awt.Color; 
+
 import javalib.worldimages.*; 
 
 // A cell of land.
@@ -129,6 +133,72 @@ class OceanCell extends Cell {
     // Draws this ocean cell onto the given background.
     WorldImage drawOnto(WorldImage background, int waterHeight) {
         return background;
+    }
+}
+
+interface IList<T> extends Iterable<T> {
+    boolean isCons();
+}
+
+class Empty<T> implements IList<T> {
+    @Override
+    public Iterator<T> iterator() {
+        return new IListIterator<T>(this);
+    }
+    
+    public boolean isCons() {
+        return false;
+    }
+}
+
+class Cons<T> implements IList<T> {
+    T first;
+    IList<T> rest;
+    
+    Cons(T first, IList<T> rest) {
+        this.first = first;
+        this.rest = rest;
+    }
+    
+    Cons(ArrayList<T> alist) {
+        if (alist.isEmpty()) {
+            throw new IllegalArgumentException("List must not be empty.");
+        }
+        this.first = alist.remove(0);
+        if (alist.isEmpty()) {
+            this.rest = new Cons<T>(alist);
+        }
+        else {
+            this.rest = new Empty<T>();
+        }
+    }
+    
+    @Override
+    public Iterator<T> iterator() {
+        return new IListIterator<T>(this);
+    }
+    
+    public boolean isCons() {
+        return true;
+    }
+}
+
+class IListIterator<T> implements Iterator<T> {
+    IList<T> list;
+    
+    IListIterator(IList<T> list) {
+        this.list = list;
+    }
+    
+    public boolean hasNext() {
+        return list.isCons();
+    }
+    
+    public T next() {
+        Cons<T> cons = (Cons<T>) list;
+        T ret = cons.first;
+        this.list = cons.rest;
+        return ret;
     }
 }
 
@@ -600,7 +670,7 @@ class Player
 // represents a forbidden island game that is aw world
 class ForbiddenIslandWorld extends World
 {
-    Board board; // all the cells
+    IList<Cell> board; // all the cells
     int waterHeight; // the height of the water
     static final int ISLAND_SIZE = 64; // constant val
     static final int BACKGROUND_SIZE = Cell.CELL_SIZE * ISLAND_SIZE;
@@ -611,7 +681,7 @@ class ForbiddenIslandWorld extends World
     // initializes data
     ForbiddenIslandWorld()
     {
-        this.board = new Board();
+        this.board = this.makeMountainBoard();
         this.player1 = new Player(ISLAND_SIZE / 2, ISLAND_SIZE / 2, this.board);
         this.waterHeight = 0;
         this.tick = 0;
