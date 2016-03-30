@@ -259,18 +259,14 @@ class Board {
 
  // makes a random terrain board
     void makeTerrainBoard() {
-        System.out.println("Terrain");
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         for (int i = 0; i < ForbiddenIslandWorld.ISLAND_SIZE; i++) {
             ArrayList<Double> row = new ArrayList<Double>();
             for (int j = 0; j < ForbiddenIslandWorld.ISLAND_SIZE; j++) {
                 row.add(0.0);
             }
-            System.out.print(row.size() + ", ");
             heights.add(row);
         }
-        System.out.println();
-        System.out.println(heights.size());
 
         int max = ForbiddenIslandWorld.ISLAND_SIZE;
         int mid = max / 2;
@@ -759,18 +755,14 @@ class ForbiddenIslandWorld extends World
     
     // makes a random terrain board
     void makeTerrainBoard() {
-        System.out.println("Terrain");
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         for (int i = 0; i < ForbiddenIslandWorld.ISLAND_SIZE; i++) {
             ArrayList<Double> row = new ArrayList<Double>();
             for (int j = 0; j < ForbiddenIslandWorld.ISLAND_SIZE; j++) {
                 row.add(0.0);
             }
-            System.out.print(row.size() + ", ");
             heights.add(row);
         }
-        System.out.println();
-        System.out.println(heights.size());
 
         int max = ForbiddenIslandWorld.ISLAND_SIZE;
         int mid = max / 2;
@@ -958,10 +950,8 @@ class ForbiddenIslandWorld extends World
                 this.BACKGROUND_SIZE,
                 OutlineMode.SOLID, new Color(0x80));
         for (Cell cell : this.board) {
-            System.out.print(cell.r + ", " + cell.c + "; ");
             image = cell.drawOnto(image, this.waterHeight);
         }
-        System.out.println();
         scene.placeImageXY(//this.player1.drawOnto( // not placed
                 image,
                 this.BACKGROUND_SIZE / 2, this.BACKGROUND_SIZE / 2);
