@@ -217,7 +217,7 @@ class Board {
                 false, true, true, true);
         heights = this.makeTerrainHelper(heights, mid, max - 1, 0, mid,
                 true, false, true, true);
-        heights = this.makeTerrainHelper(heights, mid, max, mid, max - 1,
+        heights = this.makeTerrainHelper(heights, mid, max - 1, mid, max - 1,
                 false, false, true, true);
 
         this.cells = this.doubleListToCellList(heights);
