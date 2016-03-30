@@ -756,30 +756,30 @@ class ForbiddenIslandWorld extends World
     // makes a random terrain board
     void makeTerrainBoard() {
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
-        for (int i = 0; i < ForbiddenIslandWorld.ISLAND_SIZE; i++) {
+        for (int i = 0; i < ISLAND_SIZE; i++) {
             ArrayList<Double> row = new ArrayList<Double>();
-            for (int j = 0; j < ForbiddenIslandWorld.ISLAND_SIZE; j++) {
+            for (int j = 0; j < ISLAND_SIZE; j++) {
                 row.add(0.0);
             }
             heights.add(row);
         }
 
-        int max = ForbiddenIslandWorld.ISLAND_SIZE;
-        int mid = max / 2;
+        int max = ISLAND_SIZE - 1;
+        int mid = ISLAND_SIZE / 2;
 
         heights.get(mid).set(0, 1.0);
-        heights.get(mid).set(max - 1, 1.0);
+        heights.get(mid).set(max, 1.0);
         heights.get(0).set(mid, 1.0);
-        heights.get(max - 1).set(mid, 1.0);
-        heights.get(mid).set(mid, ForbiddenIslandWorld.ISLAND_SIZE / 2.0);
+        heights.get(max).set(mid, 1.0);
+        heights.get(mid).set(mid, ISLAND_SIZE / 2.0);
         
         heights = this.makeTerrainHelper(heights, 0, mid, 0, mid,
                 true, true, true, true);
-        heights = this.makeTerrainHelper(heights, 0, mid, mid, max - 1,
+        heights = this.makeTerrainHelper(heights, 0, mid, mid, max,
                 false, true, true, true);
-        heights = this.makeTerrainHelper(heights, mid, max - 1, 0, mid,
+        heights = this.makeTerrainHelper(heights, mid, max, 0, mid,
                 true, false, true, true);
-        heights = this.makeTerrainHelper(heights, mid, max - 1, mid, max - 1,
+        heights = this.makeTerrainHelper(heights, mid, max, mid, max,
                 false, false, true, true);
 
         // creates the cells based on the heights given
