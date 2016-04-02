@@ -24,7 +24,6 @@ class Cell {
     Cell right;
     Cell bottom; // neighboring cells
     boolean isFlooded; // is this cell flooded?
-    boolean willFlood; // will this cell flood next update?
     boolean hasPart; // does this cell have a helicopter part?
 
     // initializes data
@@ -87,6 +86,20 @@ class Cell {
     WorldImage drawOnto(WorldImage background, int waterHeight) {
         int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + CELL_SIZE / 2 + CELL_SIZE;
         
+        int color = this.getColor(waterHeight);
+        
+        WorldImage cell = new RectangleImage(CELL_SIZE, CELL_SIZE, "solid",
+                new Color(color));
+//        cell = new OverlayImage(new TextImage((int)this.height + "", 8, Color.RED), cell);
+        return new OverlayOffsetImage(cell,
+                (ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1) * CELL_SIZE + offset,
+                (ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1) * CELL_SIZE + offset,
+                background);
+    }
+    
+    // calculates the color, as and int, that this cell should be
+    //   based on its height and the given water height.
+    int getColor(int waterHeight) {
         int color;
         if (this.isFlooded) {
             int maxHeight = ForbiddenIslandWorld.ISLAND_SIZE / 2;
@@ -110,31 +123,21 @@ class Cell {
             }
         }
         
-        WorldImage cell = new RectangleImage(CELL_SIZE, CELL_SIZE, OutlineMode.SOLID,
-                new Color(color));
-//        cell = new OverlayImage(new TextImage((int)this.height + "", 8, Color.RED), cell);
-        return new OverlayOffsetImage(cell,
-                (ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1) * CELL_SIZE + offset,
-                (ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1) * CELL_SIZE + offset,
-                background);
-    }
-    
-    // Determines if this cell will flood during the next step based on the given waterHeight.
-    // EFFECT: Sets the willFlood flag for the next update step accordingly.
-    void willFlood(int waterHeight) {
-        this.willFlood = 
-                !this.isFlooded &&
-                this.height < waterHeight &&
-                this.isNextToFloodedCell();
+        return color;
     }
 
     // sets this cell to flooded if the willFlood flag is true.
-    // EFFECT: changes the flooded flag based on the willFlood flag.
-    void update() {
-        if (this.willFlood) {
+    // EFFECT: changes the flooded flag if this cell is next to a flooded cell and it's height
+    //         is below the given waterHeight.
+    //         (only gets called on coastline cells, which are not flooded and are next to flooded)
+    void update(int waterHeight) {
+        if (!this.isFlooded && this.height < waterHeight) {
             this.setFlooded(true);
+            this.left.update(waterHeight);
+            this.top.update(waterHeight);
+            this.right.update(waterHeight);
+            this.bottom.update(waterHeight);
         }
-        this.willFlood = false;
     }
 
     // whether this cell neighbors a flooded cell
@@ -144,13 +147,12 @@ class Cell {
     }
 }
 
-
 // A cell in the ocean.
 class OceanCell extends Cell {
 
     // initializes data
-    OceanCell(int x, int y) {
-        super(0, x, y);
+    OceanCell(int r, int c) {
+        super(0, r, c);
         this.isFlooded = true; // always true
     }
 
@@ -284,8 +286,7 @@ class Player
     {
         if (canMove(move))
         {
-            Cell next = curr.getNeighbor(move);
-            this.curr = next;
+            this.curr = curr.getNeighbor(move);
             this.r = this.curr.r;
             this.c = this.curr.c;
             this.steps++;
@@ -331,6 +332,7 @@ class ForbiddenIslandWorld extends World
         newBoard("m");
     }
     
+    // is this position in bounds for the current board?
     boolean onBoard(int r, int c) {
         return r >= 0 && r < ISLAND_SIZE &&
                 c >= 0 && c < ISLAND_SIZE;
@@ -346,6 +348,10 @@ class ForbiddenIslandWorld extends World
         return null;
     }
     
+    // makes a new board of the specified type.
+    // EFFECT: sets board to a new board of the specified type,
+    //         sets player to a new player with no progress at the center of the board,
+    //         resets waterHeight and tick to 0.
     void newBoard(String type) {
         if (type.equals("m")) {
             this.makeMountainBoard();
@@ -496,12 +502,16 @@ class ForbiddenIslandWorld extends World
         int mid = ISLAND_SIZE / 2;
         int max = ISLAND_SIZE - 1;
         
+        // Fills top left quadrant.
         heights = this.makeTerrainHelper(heights, 0, mid, 0, mid,
                 true, true, true, true);
+        // Fills top right quadrant.
         heights = this.makeTerrainHelper(heights, 0, mid, mid, max,
                 false, true, true, true);
+        // Fills bottom left quadrant.
         heights = this.makeTerrainHelper(heights, mid, max, 0, mid,
                 true, false, true, true);
+        // Fills bottom right quadrant.
         heights = this.makeTerrainHelper(heights, mid, max, mid, max,
                 false, false, true, true);
         
@@ -535,75 +545,78 @@ class ForbiddenIslandWorld extends World
         Double b = heights.get(rmax).get(midCol);
         
         if (onLeft) {
-            double var = this.newVariance(area);
-            l = (tl + bl) / 2 + var;
-            if (l < 0) l = 0.0;
+            l = (tl + bl) / 2 + this.newVariance(area);
+            if (l < 1) l = 0.0;
             if (l > ISLAND_SIZE / 2.0) l = ISLAND_SIZE / 2.0;
         }
         if (onTop) {
-            double var = this.newVariance(area);
-            t = (tl + tr) / 2 + var;
-            if (t < 0) t = 0.0;
+            t = (tl + tr) / 2 + this.newVariance(area);
+            if (t < 1) t = 0.0;
             if (t > ISLAND_SIZE / 2.0) t = ISLAND_SIZE / 2.0;
         }
         if (onRight) {
-            double var = this.newVariance(area);
-            r = (tr + br) / 2 + var;
-            if (r < 0) r = 0.0;
+            r = (tr + br) / 2 + this.newVariance(area);
+            if (r < 1) r = 0.0;
             if (r > ISLAND_SIZE / 2.0) r = ISLAND_SIZE / 2.0;
         }
         if (onBot) {
-            double var = this.newVariance(area);
-            b = (bl + br) / 2 + var;
-            if (b < 0) b = 0.0;
+            b = (bl + br) / 2 + this.newVariance(area);
+            if (b < 1) b = 0.0;
             if (b > ISLAND_SIZE / 2.0) b = ISLAND_SIZE / 2.0;
         }
-        double var = this.newVariance(area);
-        Double m = (l + t + r + b) / 4 + var;
-        if (m < 0) m = 0.0;
+        Double m = (l + t + r + b) / 4 + this.newVariance(area);
+        if (m < 1) m = 0.0;
         if (m > ISLAND_SIZE / 2.0) m = ISLAND_SIZE / 2.0;
         
-        if (cmax - cmin <= 1 && rmax - rmin <= 1) {
-        }
-        else if(cmax - cmin <= 1) {
-            heights.get(midRow).set(cmin, l);
-            if (cmax != cmin) {
-                heights.get(midRow).set(cmax, r);
-            }
-            heights = makeTerrainHelper(heights, rmin, midRow, cmin, cmax,
-                    onLeft, onTop, onRight, true);
-            heights = makeTerrainHelper(heights, midRow, rmax, cmin, cmax,
-                    onLeft, false, onRight, onBot);
-        }
-        else if(rmax - rmin <= 1) {
-            heights.get(rmin).set(midCol, t);
-            if (rmax != rmin) {
-                heights.get(rmax).set(midCol, b);
-            }
-            heights = makeTerrainHelper(heights, rmin, rmax, cmin, midCol,
-                    onLeft, onTop, true, onBot);
-            heights = makeTerrainHelper(heights, rmin, rmax, midCol, cmax,
-                    false, onTop, onRight, onBot);
-        }
-        else {
+        if (cmax - cmin > 1 && rmax - rmin > 1) {
             heights.get(midRow).set(cmin, l);
             heights.get(midRow).set(cmax, r);
             heights.get(rmin).set(midCol, t);
             heights.get(rmax).set(midCol, b);
             heights.get(midRow).set(midCol, m);
+            // Fills top left quadrant.
             heights = makeTerrainHelper(heights, rmin, midRow, cmin, midCol,
                     onLeft, onTop, true, true);
+            // Fills top right quadrant.
             heights = makeTerrainHelper(heights, rmin, midRow, midCol, cmax,
                     false, onTop, onRight, true);
+            // Fills bottom left quadrant.
             heights = makeTerrainHelper(heights, midRow, rmax, cmin, midCol,
                     onLeft, false, true, onBot);
+            // Fills bottom right quadrant.
             heights = makeTerrainHelper(heights, midRow, rmax, midCol, cmax,
                     false, false, onRight, onBot);
+        }
+        else if(rmax - rmin > 1) {
+            heights.get(midRow).set(cmin, l);
+            if (cmax != cmin) {
+                heights.get(midRow).set(cmax, r);
+            }
+            // Fills top half of remaining.
+            heights = makeTerrainHelper(heights, rmin, midRow, cmin, cmax,
+                    onLeft, onTop, onRight, true);
+            // Fills bottom half of remaining.
+            heights = makeTerrainHelper(heights, midRow, rmax, cmin, cmax,
+                    onLeft, false, onRight, onBot);
+        }
+        else if(cmax - cmin > 1) {
+            heights.get(rmin).set(midCol, t);
+            if (rmax != rmin) {
+                heights.get(rmax).set(midCol, b);
+            }
+            // Fills left half of remaining.
+            heights = makeTerrainHelper(heights, rmin, rmax, cmin, midCol,
+                    onLeft, onTop, true, onBot);
+            // Fills right half of remaining.
+            heights = makeTerrainHelper(heights, rmin, rmax, midCol, cmax,
+                    false, onTop, onRight, onBot);
         }
 
         return heights;
     }
     
+    // returns a new random double between +scale and -scale.
+    //   weighted to be closer to -scale the higher bal is set to.
     double newVariance(double scale) {
         Random rand = new Random();
         int bal = 5;
@@ -651,15 +664,29 @@ class ForbiddenIslandWorld extends World
     public void onTick()
     {
         this.tick++;
-        if (tick % 10 == 0) {
-            waterHeight += waterIncrease;
-            for (Cell cell : this.board) {
-                cell.willFlood(this.waterHeight);
+        //if (tick % 10 == 0) {
+            this.waterHeight += this.waterIncrease;
+            IList<Cell> coastline = this.getCoastline();
+            
+            for (Cell cell: coastline) {
+                cell.update(this.waterHeight);
             }
-            for (Cell cell : this.board) {
-                cell.update();
+        //}
+    }
+    
+    
+    // Returns a list containing all cells on the coastline.
+    //      (not flooded, but next to flooded cells)
+    IList<Cell> getCoastline() {
+        IList<Cell> coastline = new Empty<Cell>();
+        
+        for (Cell cell : board) {
+            if (!cell.isFlooded() && cell.isNextToFloodedCell()) {
+                coastline = new Cons<Cell>(cell, coastline);
             }
         }
+        
+        return coastline;
     }
 
     // makes the scene with all the images
@@ -667,7 +694,7 @@ class ForbiddenIslandWorld extends World
     {
         WorldScene scene = this.getEmptyScene();
         WorldImage image = new RectangleImage(BACKGROUND_SIZE, BACKGROUND_SIZE,
-                OutlineMode.SOLID, new Color(0x80));
+                "solid", new Color(0x80));
         for (Cell cell : this.board) {
             image = cell.drawOnto(image, this.waterHeight);
         }
@@ -688,7 +715,7 @@ class ForbiddenIslandWorld extends World
         {
             WorldScene scene = this.getEmptyScene();
             scene.placeImageXY(this.lastImage(), 
-                    this.BACKGROUND_SIZE / 2, this.BACKGROUND_SIZE / 2);
+                    BACKGROUND_SIZE / 2, BACKGROUND_SIZE / 2);
             
             return new WorldEnd(true, scene);
         }
@@ -700,7 +727,7 @@ class ForbiddenIslandWorld extends World
     {
         WorldImage image =
                 new RectangleImage(BACKGROUND_SIZE, BACKGROUND_SIZE,
-                        OutlineMode.SOLID, new Color(0x80));
+                        "solid", new Color(0x80));
         for (Cell cell : this.board) {
             image = cell.drawOnto(image, this.waterHeight);
         }
@@ -739,6 +766,7 @@ class ExamplesIsland
     // initializes the data for testing
     void cellInit()
     {
+        Cell oc = new OceanCell(-1, -1);
         this.c1 = new Cell(0, 0, 0);
         this.c2 = new Cell(5, 0, 0);
         this.c3 = new Cell(10, 10, 15);
@@ -747,6 +775,10 @@ class ExamplesIsland
         this.c4b = new Cell(9, 5, 6);
         this.c4r = new Cell(13, 6, 5);
         this.c4l = new Cell(11, 4, 5);
+        c4t.setNeighbors(oc, oc, oc, this.c4);
+        c4b.setNeighbors(oc, this.c4, oc, oc);
+        c4r.setNeighbors(this.c4, oc, oc, oc);
+        c4l.setNeighbors(oc, oc, this.c4, oc);
         this.c4.setNeighbors(this.c4l, this.c4t, this.c4r, this.c4b);
     }
 
@@ -759,6 +791,22 @@ class ExamplesIsland
 
     /*
      *  To Test:
+     *   ForbiddenIslandWorld:
+     *    heightsToCells
+     *    newVariance
+     *    onBoard
+     *    cellAt
+     *    getCoastline
+     *   
+     *   Player:
+     *    isOnFlooded
+     *    move
+     *    canMove
+     *    
+     *   Cell:
+     *    getNeighbor
+     *    isFlooded
+     *    
      *   Other:
      *    ?
      */
@@ -823,35 +871,17 @@ class ExamplesIsland
         t.checkExpect(oc.isFlooded, true);
     }
 
-    // tests willFlood method
-    void testWillFlood(Tester t) {
-        cellInit();
-        t.checkExpect(this.c4.willFlood, false);
-        this.c4.willFlood(9);
-        t.checkExpect(this.c4.willFlood, false);
-        c4b.setFlooded(true);
-        this.c4.willFlood(10);
-        t.checkExpect(this.c4.willFlood, false);
-        this.c4.willFlood(13);
-        t.checkExpect(this.c4.willFlood, true);
-        this.c4.setFlooded(true);
-        this.c4.willFlood(13);
-        t.checkExpect(this.c4.willFlood, false);
-    }
-
     // tests cell updating
     void testCellUpdate(Tester t)
     {
         cellInit();
-        this.c4.willFlood = false;
-        this.c4.update();
         t.checkExpect(this.c4.isFlooded, false);
-        this.c4.willFlood = true;
-        this.c4.update();
+        this.c4.update(0);
+        t.checkExpect(this.c4.isFlooded, false);
+        this.c4.update(13);
         t.checkExpect(this.c4.isFlooded, true);
-        this.c4.willFlood = false;
-        this.c4.update();
-        t.checkExpect(this.c4.isFlooded, true);
+        t.checkExpect(this.c4b.isFlooded, true);
+        t.checkExpect(this.c4r.isFlooded, false);
     }
 
     // tests is next to flooded cell
