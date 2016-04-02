@@ -112,7 +112,7 @@ class Cell {
         
         WorldImage cell = new RectangleImage(CELL_SIZE, CELL_SIZE, OutlineMode.SOLID,
                 new Color(color));
-        cell = new OverlayImage(new TextImage((int)this.height + "", 8, Color.RED), cell);
+//        cell = new OverlayImage(new TextImage((int)this.height + "", 8, Color.RED), cell);
         return new OverlayOffsetImage(cell,
                 (ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1) * CELL_SIZE + offset,
                 (ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1) * CELL_SIZE + offset,
@@ -288,17 +288,26 @@ class Player
             this.curr = next;
             this.r = this.curr.r;
             this.c = this.curr.c;
+            this.steps++;
         }
+    }
+    
+    // is this player on a flooded cell?
+    boolean isOnFlooded() {
+        return this.curr.isFlooded();
     }
 
     // given an image, it draws this image onto it
     WorldImage drawOnto(WorldImage background)
     {
-        int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + Cell.CELL_SIZE / 2;
+        int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2
+                + Cell.CELL_SIZE / 2 + Cell.CELL_SIZE;
+        double scale = 0.5 * Cell.CELL_SIZE / 15;
         
+        WorldImage image = new ScaleImage(new FromFileImage("Images/pilot-icon.png"), scale);
+        image = new OverlayImage(new TextImage(this.steps + "", 8, Color.RED), image);
         return new OverlayOffsetImage(
-                new ScaleImage(
-                        new FromFileImage("Images/pilot-icon.png"), 0.5),
+                image,
                 (ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1) * Cell.CELL_SIZE + offset,
                 (ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1) * Cell.CELL_SIZE + offset,
                 background);
@@ -311,7 +320,7 @@ class ForbiddenIslandWorld extends World
     IList<Cell> board; // all the cells
     int waterHeight; // the height of the water
     static final int ISLAND_SIZE = 64; // constant val
-    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * (ISLAND_SIZE + 1) + 1;
+    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * (ISLAND_SIZE + 1);
     Player player1;
     final int waterIncrease = 1;
     int tick; // time
@@ -375,14 +384,15 @@ class ForbiddenIslandWorld extends World
         }
 
         // updates the neighboring cells for each cell
+        Cell offBoard = new OceanCell(-1, 1);
         for (int i = 0; i < result.size(); i++) {
             ArrayList<Cell> row = result.get(i);
             for (int j = 0; j < row.size(); j++) {
                 Cell curr = row.get(j);
-                Cell left = curr;
-                Cell right = curr;
-                Cell top = curr;
-                Cell bottom = curr;
+                Cell left = offBoard;
+                Cell right = offBoard;
+                Cell top = offBoard;
+                Cell bottom = offBoard;
                 
                 if (onBoard(i, j - 1)) {
                     left = result.get(i).get(j - 1);
@@ -509,8 +519,7 @@ class ForbiddenIslandWorld extends World
     ArrayList<ArrayList<Double>> makeTerrainHelper
     (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax,
             boolean onLeft, boolean onTop, boolean onRight, boolean onBot) {
-        Random rand = new Random();
-        double var = (rmax - rmin) * (cmax - cmin) / 4.0;
+        double area = (rmax - rmin) * (cmax - cmin) / 4.0;
         
         Double tl = heights.get(rmin).get(cmin);
         Double tr = heights.get(rmin).get(cmax);
@@ -526,26 +535,31 @@ class ForbiddenIslandWorld extends World
         Double b = heights.get(rmax).get(midCol);
         
         if (onLeft) {
-            l = (tl + bl) / 2 + (4 * rand.nextDouble() - 3) * var;
+            double var = this.newVariance(area);
+            l = (tl + bl) / 2 + var;
             if (l < 0) l = 0.0;
             if (l > ISLAND_SIZE / 2.0) l = ISLAND_SIZE / 2.0;
         }
         if (onTop) {
-            t = (tl + tr) / 2 + (4 * rand.nextDouble() - 3) * var;
+            double var = this.newVariance(area);
+            t = (tl + tr) / 2 + var;
             if (t < 0) t = 0.0;
             if (t > ISLAND_SIZE / 2.0) t = ISLAND_SIZE / 2.0;
         }
         if (onRight) {
-            r = (tr + br) / 2 + (4 * rand.nextDouble() - 3) * var;
+            double var = this.newVariance(area);
+            r = (tr + br) / 2 + var;
             if (r < 0) r = 0.0;
             if (r > ISLAND_SIZE / 2.0) r = ISLAND_SIZE / 2.0;
         }
         if (onBot) {
-            b = (bl + br) / 2 + (4 * rand.nextDouble() - 3) * var;
+            double var = this.newVariance(area);
+            b = (bl + br) / 2 + var;
             if (b < 0) b = 0.0;
             if (b > ISLAND_SIZE / 2.0) b = ISLAND_SIZE / 2.0;
         }
-        Double m = (l + t + r + b) / 4 + (4 * rand.nextDouble() - 3) * var;
+        double var = this.newVariance(area);
+        Double m = (l + t + r + b) / 4 + var;
         if (m < 0) m = 0.0;
         if (m > ISLAND_SIZE / 2.0) m = ISLAND_SIZE / 2.0;
         
@@ -589,6 +603,16 @@ class ForbiddenIslandWorld extends World
 
         return heights;
     }
+    
+    double newVariance(double scale) {
+        Random rand = new Random();
+        int bal = 5;
+        double var = ((bal + 1) * rand.nextDouble() - bal) * scale;
+        if (var < 0) {
+            var = var / bal;
+        }
+        return var;
+    }
 
     // changes the state of the world given a key stroke
     public void onKeyEvent(String key)
@@ -627,7 +651,7 @@ class ForbiddenIslandWorld extends World
     public void onTick()
     {
         this.tick++;
-        //if (tick % 10 == 0) {
+        if (tick % 10 == 0) {
             waterHeight += waterIncrease;
             for (Cell cell : this.board) {
                 cell.willFlood(this.waterHeight);
@@ -635,7 +659,7 @@ class ForbiddenIslandWorld extends World
             for (Cell cell : this.board) {
                 cell.update();
             }
-        //}
+        }
     }
 
     // makes the scene with all the images
@@ -658,18 +682,18 @@ class ForbiddenIslandWorld extends World
 
     // when the games over
     // the player drowns
-//    public WorldEnd worldEnds()
-//    {
-//        if (!board.notFlooded(player1.x, player1.y))
-//        {
-//            WorldScene scene = this.getEmptyScene();
-//            scene.placeImageXY(this.lastImage(), 
-//                    this.BACKGROUND_SIZE / 2, this.BACKGROUND_SIZE / 2);
-//            
-//            return new WorldEnd(true, scene);
-//        }
-//        return new WorldEnd(false, this.makeScene());
-//    }
+    public WorldEnd worldEnds()
+    {
+        if (player1.isOnFlooded())
+        {
+            WorldScene scene = this.getEmptyScene();
+            scene.placeImageXY(this.lastImage(), 
+                    this.BACKGROUND_SIZE / 2, this.BACKGROUND_SIZE / 2);
+            
+            return new WorldEnd(true, scene);
+        }
+        return new WorldEnd(false, this.makeScene());
+    }
     
     // returns the game over screen
     public WorldImage lastImage()
@@ -683,8 +707,13 @@ class ForbiddenIslandWorld extends World
         
         image = this.player1.drawOnto(image);
         
-        return new OverlayImage(new TextImage("GAME OVER! Player's steps: " + player1.steps,
-                60, Color.MAGENTA), image);
+        int textSize = 60 * ISLAND_SIZE / 64 * Cell.CELL_SIZE / 15;
+        
+        WorldImage text = new AboveImage(
+                new TextImage("GAME OVER!", textSize, Color.MAGENTA),
+                new TextImage("Player's steps: " + player1.steps, textSize, Color.MAGENTA));
+        
+        return new OverlayImage(text, image);
     }
 }
 
@@ -866,8 +895,8 @@ class ExamplesIsland
     void testIsland(Tester t) {
         this.gameInit();
         this.game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE,
-                ForbiddenIslandWorld.BACKGROUND_SIZE);//,
-//                0.01);
+                ForbiddenIslandWorld.BACKGROUND_SIZE,
+                0.01);
     }
     // main, runs the class
     public static void main(String[] args) {
