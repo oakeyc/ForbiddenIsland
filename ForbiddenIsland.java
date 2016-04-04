@@ -358,6 +358,7 @@ class ForbiddenIslandWorld extends World {
     static final int ISLAND_SIZE = 64; // constant val
     static final int BACKGROUND_SIZE = Cell.CELL_SIZE * (ISLAND_SIZE + 1);
     Player player1;
+    Player player2;
     final int WATERINCREASE = 1;
     int tick; // time
     int numParts; // number of helicopter parts
@@ -389,6 +390,8 @@ class ForbiddenIslandWorld extends World {
         this.tick = 0;
         this.player1 = new Player(ISLAND_SIZE / 2, 
                 ISLAND_SIZE / 2, this.cellAt(ISLAND_SIZE / 2, ISLAND_SIZE / 2));
+        this.player2 = new Player(ISLAND_SIZE / 2 + 1, 
+                ISLAND_SIZE / 2 + 1, this.cellAt(ISLAND_SIZE / 2 + 1, ISLAND_SIZE / 2 + 1));
     }
 
     // whether given coordinates are in parts
@@ -692,9 +695,33 @@ class ForbiddenIslandWorld extends World {
         }
         return null;
     }
+    
+    // translates another player into up down left right
+    String translate(String key)
+    {
+        if (key.equals("a"))
+        {
+            return "left";
+        }
+        else if (key.equals("w"))
+        {
+            return "up";
+        }
+        else if (key.equals("d"))
+        {
+            return "right";
+        }
+        else if (key.equals("s"))
+        {
+            return "down";
+        }
+        else
+        {
+            return "bad"; // i can guarentee "bad" won't mean anything
+        }
+    }
 
     // changes the state of the world given a key stroke
-    @Override
     public void onKeyEvent(String key) {
         // moves the player
         if (key.equals("up") || key.equals("down") || key.equals("left") || key.equals("right")) {
@@ -702,6 +729,15 @@ class ForbiddenIslandWorld extends World {
                 this.numParts--;
             }
         }
+        
+        if (key.equals("a") || key.equals("w") || key.equals("d") || key.equals("s"))
+        {
+            if (this.player2.move(translate(key)))
+            {
+                this.numParts--;
+            }
+        }
+        
         // new islands
         else if (key.equals("m") || key.equals("r") || key.equals("t")) {
             this.newBoard(key);
@@ -710,7 +746,6 @@ class ForbiddenIslandWorld extends World {
 
     // changes the state of the world
     // EFFECT: increases the water height and updates the board
-    @Override
     public void onTick() {
         this.tick++;
         // if (tick % 10 == 0) {
@@ -738,7 +773,6 @@ class ForbiddenIslandWorld extends World {
     }
 
     // makes the scene with all the images
-    @Override
     public WorldScene makeScene() {
         WorldScene scene = this.getEmptyScene();
         WorldImage image = new RectangleImage(BACKGROUND_SIZE,
@@ -747,15 +781,14 @@ class ForbiddenIslandWorld extends World {
             image = cell.drawOnto(image, this.waterHeight);
         }
 
-        image = this.player1.drawOnto(image);
-
+        image = this.player2.drawOnto(this.player1.drawOnto(image));
+        
         scene.placeImageXY(image, BACKGROUND_SIZE / 2, BACKGROUND_SIZE / 2);
         return scene;
     }
 
     // when the games over
     // the player drowns, or the player gets off island
-    @Override
     public WorldEnd worldEnds() {
         if (player1.isOnFlooded() || numParts == 0) {
             WorldScene scene = this.getEmptyScene();
@@ -893,7 +926,8 @@ class ExamplesIsland {
         t.checkExpect(this.game.onBoard(ForbiddenIslandWorld.ISLAND_SIZE, 0), false);
         t.checkExpect(this.game.onBoard(0, 
                 ForbiddenIslandWorld.ISLAND_SIZE), false);
-        t.checkExpect(this.game.onBoard(ForbiddenIslandWorld.ISLAND_SIZE - 1, ForbiddenIslandWorld.ISLAND_SIZE - 1),
+        t.checkExpect(this.game.onBoard(ForbiddenIslandWorld.ISLAND_SIZE - 1, 
+                ForbiddenIslandWorld.ISLAND_SIZE - 1),
                 true);
     }
 
@@ -977,6 +1011,8 @@ class ExamplesIsland {
                 ForbiddenIslandWorld.BACKGROUND_SIZE, 3);
         // ForbiddenIslandWorld.BACKGROUND_SIZE, .5);
     }
+    
+    // tests 
 
     // main, runs the class
     public static void main(String[] args) {
