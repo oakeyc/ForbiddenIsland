@@ -93,12 +93,17 @@ class Cell {
 
         if (this.hasPart)
         {
-            return new OverlayImage(
-                    new FromFileImage("helicopter-icon.png"),
-                    new OverlayOffsetImage(cell,
-                            (ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1) * CELL_SIZE + offset,
-                            (ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1) * CELL_SIZE + offset,
-                            background));
+            double scale = 0.5 * Cell.CELL_SIZE / 15;
+
+            WorldImage copter = 
+                    new ScaleImage(new FromFileImage("Images/helicopter-icon.png"), scale);
+           
+            return new OverlayOffsetImage(
+                    new OverlayImage(
+                           copter, cell),
+                    (ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1) * CELL_SIZE + offset,
+                    (ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1) * CELL_SIZE + offset,
+                    background);
         }
         else
         {
@@ -166,6 +171,12 @@ class Cell {
         {
             return false;
         }
+    }
+
+    // EFFECT: changes the state of hasPart to true
+    void givePart()
+    {
+        this.hasPart = true;
     }
 
     // whether this cell neighbors a flooded cell
@@ -363,8 +374,8 @@ class ForbiddenIslandWorld extends World
     // initializes data
     ForbiddenIslandWorld()
     {
-        this.newBoard("m");
         this.numParts = 9;
+        this.newBoard("m");
     }
 
     // makes a new board of the specified type.
@@ -390,9 +401,35 @@ class ForbiddenIslandWorld extends World
                 this.cellAt(ISLAND_SIZE / 2, ISLAND_SIZE / 2));
     }
 
+
+    // whether given coordinates are in parts
+    boolean inPart(int row, int rowSize, int col, ArrayList<Integer> parts)
+    {
+        for (Integer pos: parts)
+        {
+            if ((row * rowSize + col) == pos)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // takes in a matrix of heights, creates a matrix of cells based on those heights
     ArrayList<ArrayList<Cell>> heightsToCells(ArrayList<ArrayList<Double>> heights) {
         ArrayList<ArrayList<Cell>> result = new ArrayList<ArrayList<Cell>>();
+        ArrayList<Integer> parts = new ArrayList<Integer>();
+
+        while (parts.size() <= numParts)
+        {
+            int indexOuter = (int) (Math.random() * heights.size());
+            int indexInner = (int) (Math.random() * heights.get(0).size());
+
+            if (heights.get(indexOuter).get(indexInner) != 0)
+            {
+                parts.add(indexOuter * heights.get(0).size() + indexInner);
+            }
+        }
 
         for (int i = 0; i < heights.size(); i++) {
             ArrayList<Double> hRow = heights.get(i);
@@ -402,7 +439,12 @@ class ForbiddenIslandWorld extends World
                     newRow.add(new OceanCell(i, j));
                 }
                 else {
-                    newRow.add(new Cell(hRow.get(j), i, j));
+                    Cell temp = new Cell(hRow.get(j), i, j);
+                    if (inPart(i, heights.get(i).size(), j, parts))
+                    {
+                        temp.givePart();
+                    }
+                    newRow.add(temp);
                 }
             }
             result.add(newRow);
@@ -687,12 +729,13 @@ class ForbiddenIslandWorld extends World
     public void onTick()
     {
         this.tick++;
-        //if (tick % 10 == 0) {
+//        if (tick % 10 == 0) {
         this.waterHeight += this.waterIncrease;
         IList<Cell> coastline = this.getCoastline();
 
         for (Cell cell: coastline) {
             cell.update(this.waterHeight);
+//        }
         }
     }
 
@@ -975,13 +1018,13 @@ class ExamplesIsland
         this.gameInit();
         this.game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE,
                 ForbiddenIslandWorld.BACKGROUND_SIZE,
-                0.01);
+                .5);
     }
     // main, runs the class
     public static void main(String[] args) {
         ForbiddenIslandWorld game = new ForbiddenIslandWorld();
         game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE,
                 ForbiddenIslandWorld.BACKGROUND_SIZE,
-                0.01);
+                0.1);
     }
 }
