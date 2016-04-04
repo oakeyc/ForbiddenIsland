@@ -790,7 +790,7 @@ class ForbiddenIslandWorld extends World {
     // when the games over
     // the player drowns, or the player gets off island
     public WorldEnd worldEnds() {
-        if (player1.isOnFlooded() || numParts == 0) {
+        if (player1.isOnFlooded() || player2.isOnFlooded() || numParts == 0) {
             WorldScene scene = this.getEmptyScene();
             scene.placeImageXY(this.lastImage(), BACKGROUND_SIZE / 2, BACKGROUND_SIZE / 2);
 
@@ -813,7 +813,11 @@ class ForbiddenIslandWorld extends World {
 
         WorldImage text = new AboveImage(new TextImage("Congratulations Winner!", 
                 textSize, Color.MAGENTA),
-                new TextImage("Player's steps: " + player1.steps, textSize, Color.MAGENTA));
+                new AboveImage(
+                        new TextImage("Player 1's steps: " + player1.steps,
+                                textSize, Color.MAGENTA)),
+                        new TextImage("Player 2's steps: " + player2.steps, 
+                                textSize, Color.MAGENTA));
 
         return new OverlayImage(text, image);
     }
@@ -836,8 +840,11 @@ class ForbiddenIslandWorld extends World {
 
             WorldImage text = new AboveImage(
                     new TextImage("GAME OVER!", textSize, Color.MAGENTA),
-                    new TextImage("Player's steps: " + player1.steps, textSize, Color.MAGENTA));
-
+                    new AboveImage(
+                            new TextImage("Player 1's steps: " + player1.steps,
+                                    textSize, Color.MAGENTA)),
+                            new TextImage("Player 2's steps: " + player2.steps, 
+                                    textSize, Color.MAGENTA));
             return new OverlayImage(text, image);
         }
     }
