@@ -1018,7 +1018,7 @@ class ExamplesIsland
         this.gameInit();
         this.game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE,
                 ForbiddenIslandWorld.BACKGROUND_SIZE,
-                .5);
+                3);
     }
     // main, runs the class
     public static void main(String[] args) {
