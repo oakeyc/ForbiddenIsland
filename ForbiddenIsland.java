@@ -4,7 +4,6 @@
 // Obermiller Karl
 // obermillerk
 
-
 import java.util.ArrayList; 
 import java.util.Iterator;
 import java.util.Random;
@@ -15,10 +14,11 @@ import javalib.worldimages.*;
 
 // A cell of land.
 class Cell {
+
     static final int CELL_SIZE = 15; // size of the drawn cell
     double height;
-    int r;
-    int c; // position
+    int r; // row position
+    int c; // column position
     Cell left;
     Cell top;
     Cell right;
@@ -90,11 +90,23 @@ class Cell {
 
         WorldImage cell = new RectangleImage(CELL_SIZE, CELL_SIZE, "solid",
                 new Color(color));
-        //        cell = new OverlayImage(new TextImage((int)this.height + "", 8, Color.RED), cell);
-        return new OverlayOffsetImage(cell,
-                (ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1) * CELL_SIZE + offset,
-                (ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1) * CELL_SIZE + offset,
-                background);
+
+        if (this.hasPart)
+        {
+            return new OverlayImage(
+                    new FromFileImage("helicopter-icon.png"),
+                    new OverlayOffsetImage(cell,
+                            (ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1) * CELL_SIZE + offset,
+                            (ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1) * CELL_SIZE + offset,
+                            background));
+        }
+        else
+        {
+            return new OverlayOffsetImage(cell,
+                    (ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1) * CELL_SIZE + offset,
+                    (ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1) * CELL_SIZE + offset,
+                    background);
+        }
     }
 
     // calculates the color, as and int, that this cell should be
@@ -137,6 +149,22 @@ class Cell {
             this.top.update(waterHeight);
             this.right.update(waterHeight);
             this.bottom.update(waterHeight);
+        }
+    }
+
+    // if there is a helicopter piece, there will no longer have one
+    // returns whether the state of hasPart changed
+    // EFFECT: change value of hasPart
+    boolean cellLosePart()
+    {
+        if (this.hasPart)
+        {
+            this.hasPart = false;
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -184,7 +212,6 @@ interface IList<T> extends Iterable<T> {
 class Empty<T> implements IList<T> {
 
     // Returns a new iterator for this empty list.
-    @Override
     public Iterator<T> iterator() {
         return new IListIterator<T>(this);
     }
@@ -197,9 +224,11 @@ class Empty<T> implements IList<T> {
 
 //A non-empty list of T.
 class Cons<T> implements IList<T> {
+
     T first;
     IList<T> rest;
 
+    // ctor
     Cons(T first, IList<T> rest) {
         this.first = first;
         this.rest = rest;
@@ -220,7 +249,6 @@ class Cons<T> implements IList<T> {
     }
 
     // Returns a new iterator for this non-empty list.
-    @Override
     public Iterator<T> iterator() {
         return new IListIterator<T>(this);
     }
@@ -235,6 +263,7 @@ class Cons<T> implements IList<T> {
 class IListIterator<T> implements Iterator<T> {
     IList<T> list;
 
+    // ctor
     IListIterator(IList<T> list) {
         this.list = list;
     }
@@ -282,7 +311,8 @@ class Player
     }
 
     // moves this player given a direction
-    void move(String move)
+    // returns if we picked up a helicopter piece or not
+    boolean move(String move)
     {
         if (canMove(move))
         {
@@ -290,7 +320,10 @@ class Player
             this.r = this.curr.r;
             this.c = this.curr.c;
             this.steps++;
+
+            return this.curr.cellLosePart();
         }
+        return false;
     }
 
     // is this player on a flooded cell?
@@ -325,11 +358,13 @@ class ForbiddenIslandWorld extends World
     Player player1;
     final int waterIncrease = 1;
     int tick; // time
+    int numParts; // number of helicopter parts
 
     // initializes data
     ForbiddenIslandWorld()
     {
-        newBoard("m");
+        this.newBoard("m");
+        this.numParts = 9;
     }
 
     // makes a new board of the specified type.
@@ -509,7 +544,9 @@ class ForbiddenIslandWorld extends World
         this.board = new Cons<Cell>(temp);
     }
 
-
+    // given the minimum row, maximum row, minumum column, maximum column, 
+    // and which quadrant it was
+    // it helps make a random terrain
     ArrayList<ArrayList<Double>> makeTerrainHelper
     (ArrayList<ArrayList<Double>> heights, int rmin, int rmax, int cmin, int cmax,
             boolean onLeft, boolean onTop, boolean onRight, boolean onBot) {
@@ -634,29 +671,14 @@ class ForbiddenIslandWorld extends World
         // moves the player
         if (key.equals("up") || key.equals("down")
                 || key.equals("left") || key.equals("right")) {
-            this.player1.move(key);
+            if (this.player1.move(key))
+            {
+                numParts--;
+            }
         }
         // new islands
         else if (key.equals("m") || key.equals("r") || key.equals("t")) {
             this.newBoard(key);
-        }
-    }
-
-    // returns the opposite direction of the given string
-    String oppositeDirection(String dir)
-    {
-        switch (dir)
-        {
-            case "up":
-                return "down";
-            case "down":
-                return "up";
-            case "left":
-                return "right";
-            case "right":
-                return "left";
-            default:
-                return "";
         }
     }
 
@@ -672,9 +694,7 @@ class ForbiddenIslandWorld extends World
         for (Cell cell: coastline) {
             cell.update(this.waterHeight);
         }
-        //}
-}
-
+    }
 
     // Returns a list containing all cells on the coastline.
     //      (not flooded, but next to flooded cells)
@@ -709,10 +729,10 @@ class ForbiddenIslandWorld extends World
     }
 
     // when the games over
-    // the player drowns
+    // the player drowns, or the player gets off island
     public WorldEnd worldEnds()
     {
-        if (player1.isOnFlooded())
+        if (player1.isOnFlooded() || numParts == 0)
         {
             WorldScene scene = this.getEmptyScene();
             scene.placeImageXY(this.lastImage(), 
@@ -723,8 +743,8 @@ class ForbiddenIslandWorld extends World
         return new WorldEnd(false, this.makeScene());
     }
 
-    // returns the game over screen
-    public WorldImage lastImage()
+    // returns the winner's image
+    public WorldImage winImage()
     {
         WorldImage image =
                 new RectangleImage(BACKGROUND_SIZE, BACKGROUND_SIZE,
@@ -738,10 +758,38 @@ class ForbiddenIslandWorld extends World
         int textSize = 60 * ISLAND_SIZE / 64 * Cell.CELL_SIZE / 15;
 
         WorldImage text = new AboveImage(
-                new TextImage("GAME OVER!", textSize, Color.MAGENTA),
+                new TextImage("Congratulations Winner!", textSize, Color.MAGENTA),
                 new TextImage("Player's steps: " + player1.steps, textSize, Color.MAGENTA));
 
         return new OverlayImage(text, image);
+    }
+
+    // returns the game over screen
+    public WorldImage lastImage()
+    {
+        if (numParts == 0)
+        {
+            return winImage();
+        }
+        else
+        {
+            WorldImage image =
+                    new RectangleImage(BACKGROUND_SIZE, BACKGROUND_SIZE,
+                            "solid", new Color(0x80));
+            for (Cell cell : this.board) {
+                image = cell.drawOnto(image, this.waterHeight);
+            }
+
+            image = this.player1.drawOnto(image);
+
+            int textSize = 60 * ISLAND_SIZE / 64 * Cell.CELL_SIZE / 15;
+
+            WorldImage text = new AboveImage(
+                    new TextImage("GAME OVER!", textSize, Color.MAGENTA),
+                    new TextImage("Player's steps: " + player1.steps, textSize, Color.MAGENTA));
+
+            return new OverlayImage(text, image);
+        }
     }
 }
 
