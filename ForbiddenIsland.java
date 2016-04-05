@@ -15,7 +15,7 @@ import javalib.worldimages.*;
 // A cell of land.
 class Cell {
 
-    static final int CELL_SIZE = 15; // size of the drawn cell
+    static final int CELL_SIZE = 10; // size of the drawn cell
     double height;
     int r; // row position
     int c; // column position
@@ -230,13 +230,15 @@ class HexCell extends Cell {
     // changes the colors according to the height and waterheight
     @Override
     WorldImage drawOnto(WorldImage background, int waterHeight) {
-        int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + CELL_SIZE / 2
-                + CELL_SIZE;
+        int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + CELL_SIZE;
 
         int color = this.getColor(waterHeight);
 
-        WorldImage cell = new HexagonImage(CELL_SIZE / 2, "solid", new Color(
-                color));
+        int cc = ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1;
+        int rr = ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1;
+
+        WorldImage cell = new HexagonImage(CELL_SIZE / 2 + 1, "solid",
+                new Color(color));
 
         if (this.hasPart) {
             double scale = 0.5 * Cell.CELL_SIZE / 15;
@@ -246,11 +248,10 @@ class HexCell extends Cell {
 
             cell = new OverlayImage(copter, cell);
         }
-        return new OverlayOffsetImage(cell, (ForbiddenIslandWorld.ISLAND_SIZE
-                - this.c - 1)
-                * CELL_SIZE + offset, (ForbiddenIslandWorld.ISLAND_SIZE
-                - this.r - 1)
-                * CELL_SIZE + offset, background);
+        return new OverlayOffsetImage(cell,
+                2 * cc * CELL_SIZE + offset + CELL_SIZE * ((rr + 1) % 2),
+                rr * CELL_SIZE / 2 + offset / 2,
+                background);
     }
 }
 
@@ -440,12 +441,13 @@ class ForbiddenIslandWorld extends World {
     IList<Cell> board; // all the cells
     int waterHeight; // the height of the water
     static final int ISLAND_SIZE = 64; // constant val
-    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * (ISLAND_SIZE + 1);
+    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * ISLAND_SIZE * 2 + Cell.CELL_SIZE;
     Player player1;
     Player player2;
     final int WATERINCREASE = 1;
     int tick; // time
     int numParts; // number of helicopter parts
+    boolean hex = true;
 
     // initializes data
     ForbiddenIslandWorld() {
@@ -509,7 +511,7 @@ class ForbiddenIslandWorld extends World {
                 if (hRow.get(j) == 0) {
                     newRow.add(new OceanCell(i, j));
                 } else {
-                    Cell temp = new Cell(hRow.get(j), i, j);
+                    Cell temp = new HexCell(hRow.get(j), i, j);
                     if (inPart(i, heights.get(i).size(), j, parts)) {
                         temp.givePart();
                     }
@@ -859,7 +861,7 @@ class ForbiddenIslandWorld extends World {
     @Override
     public WorldScene makeScene() {
         WorldScene scene = this.getEmptyScene();
-        WorldImage image = new RectangleImage(BACKGROUND_SIZE, BACKGROUND_SIZE,
+        WorldImage image = new RectangleImage(BACKGROUND_SIZE, BACKGROUND_SIZE / 2,
                 "solid", new Color(0x80));
         for (Cell cell : this.board) {
             image = cell.drawOnto(image, this.waterHeight);
@@ -1098,7 +1100,7 @@ class ExamplesIsland {
     void testIsland(Tester t) {
         this.gameInit();
         this.game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE,
-                ForbiddenIslandWorld.BACKGROUND_SIZE, .3);
+                ForbiddenIslandWorld.BACKGROUND_SIZE);
         // ForbiddenIslandWorld.BACKGROUND_SIZE, .5);
     }
 
