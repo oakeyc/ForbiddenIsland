@@ -641,8 +641,7 @@ class ForbiddenIslandWorld extends World {
         heights = this
                 .makeTerrainHelper(heights, mid, max, 0, mid, true, false);
         // Fills bottom right quadrant.
-        heights = this.makeTerrainHelper(heights, mid, max, mid, max, false,
-                false);
+        heights = this.makeTerrainHelper(heights, mid, max, mid, max, false, false);
 
         // creates the cells based on the heights given
         ArrayList<ArrayList<Cell>> cells = this.heightsToCells(heights);
