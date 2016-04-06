@@ -376,9 +376,9 @@ class Player {
     }
 
     // if this player is on this point
-    boolean onPoint(int r, int c)
+    boolean onPoint(Target t)
     {
-        return this.r == r && this.c == c;
+        return t.samePos(this.r, this.c);
     }
 }
 
@@ -404,7 +404,7 @@ class Target
     // if this player picks up this item
     boolean pickUp(Player p)
     {
-        return p.onPoint(this.r, this.c);
+        return p.onPoint(this);
     }
 
     // if this target is on the same position as something
@@ -1012,6 +1012,13 @@ class ExamplesIsland {
     Player p1;
     Player p2;
     
+    Target t1;
+    Target t2;
+    Target t3;
+    
+    HelicopterTarget ht1;
+    HelicopterTarget ht2;
+    
     // initializes the forbidden island world.
     void gameInit() {
         this.game = new ForbiddenIslandWorld();
@@ -1024,6 +1031,18 @@ class ExamplesIsland {
         this.p2 = new Player(12, 5, c4);
  
     }
+    
+    // initializes target data
+    void targetInit()
+    {
+        this.t1 = new Target(0, 0);
+        this.t2 = new Target(0, 1);
+        this.t3 = new Target(12, 5);
+        
+        this.ht1 = new HelicopterTarget(32, 32);
+        this.ht2 = new HelicopterTarget(0, 0);
+    }
+
     // initializes the data for testing
     void cellInit() {
         Cell oc = new OceanCell(-1, -1);
@@ -1212,10 +1231,13 @@ class ExamplesIsland {
         cellInit();
         playerInit();
         
-        return t.checkExpect(p1.canMove("down"), true) && 
+        this.p1 = new Player(4, 2, this.c4b);
+        this.p2 = new Player(40, 20, this.c4r);
+        
+        return t.checkExpect(p1.canMove("down"), false) && 
                 t.checkExpect(p2.canMove("up"), false) && 
-                t.checkExpect(p2.canMove("left"), false) && 
-                t.checkExpect(p2.canMove("right"), false);
+                t.checkExpect(p2.canMove("left"), true) && 
+                t.checkExpect(p1.canMove("up"), true);
     }
     
     // tests the move method in player class
@@ -1223,6 +1245,9 @@ class ExamplesIsland {
     {
         cellInit();
         playerInit();
+        
+        this.p1 = new Player(4, 2, this.c4b);
+        this.p2 = new Player(40, 20, this.c4r);
         
         return t.checkExpect(p1.move("right"), false) && 
                 t.checkExpect(p2.move("up"), false) &&
@@ -1234,6 +1259,9 @@ class ExamplesIsland {
     {
         cellInit();
         playerInit();
+        
+        this.p1 = new Player(4, 2, this.c4b);
+        this.p2 = new Player(40, 20, this.c4r);
         Player p3 = new Player(5, 3, this.c4t);
         
         boolean before; 
@@ -1243,8 +1271,8 @@ class ExamplesIsland {
         p3 = new Player(9, 2, new OceanCell(9, 2));
         after = p3.isOnFlooded();
     
-        return t.checkExpect(p1.isOnFlooded(), false) && 
-                t.checkExpect(p2.isOnFlooded(), false) && 
+        return t.checkExpect(this.p1.isOnFlooded(), false) && 
+                t.checkExpect(this.p2.isOnFlooded(), false) && 
                 t.checkExpect(before, false) && 
                 t.checkExpect(after, true);
     }
@@ -1256,8 +1284,8 @@ class ExamplesIsland {
         playerInit();
         Player p3 = new Player(5, 3, this.center);
 
-        return t.checkExpect(p1.onHighestPoint(), false) && 
-                t.checkExpect(p2.onHighestPoint(), false) && 
+        return t.checkExpect(this.p1.onHighestPoint(), false) && 
+                t.checkExpect(this.p2.onHighestPoint(), false) && 
                 t.checkExpect(p3.onHighestPoint(), true);
     }
     
@@ -1266,12 +1294,29 @@ class ExamplesIsland {
     {
         cellInit();
         playerInit();
+        targetInit();
         
-        return t.checkExpect(p1.onPoint(0, 0), true) && 
-                t.checkExpect(p1.onPoint(3, 9), false) && 
-                t.checkExpect(p2.onPoint(120, 200), false);
+        return t.checkExpect(this.p1.onPoint(this.t1), true) && 
+                t.checkExpect(this.p1.onPoint(this.t2), false) && 
+                t.checkExpect(this.p2.onPoint(this.t3), true);
     }
     
+    // tests target methods
+    boolean testTarget(Tester t)
+    {
+        cellInit();
+        playerInit();
+        targetInit();
+        
+        return t.checkExpect(this.t1.isHeli(), false) && 
+                t.checkExpect(this.t2.isHeli(), false) && 
+                t.checkExpect(this.ht1.isHeli(), true) &&
+                t.checkExpect(this.t1.pickUp(this.p1), true) &&
+                t.checkExpect(this.t2.pickUp(this.p1), false) &&
+                t.checkExpect(this.t3.pickUp(this.p2), true) && 
+                t.checkExpect(this.ht1.pickUp(this.p1), false) &&
+                t.checkExpect(this.ht2.pickUp(this.p2), false);
+    }
 
     // main, runs the class
     public static void main(String[] args) {
