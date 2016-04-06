@@ -84,8 +84,7 @@ class Cell {
     // Draws this cell onto the given background
     // changes the colors according to the height and waterheight
     WorldImage drawOnto(WorldImage background, int waterHeight) {
-        int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + CELL_SIZE / 2
-                + CELL_SIZE;
+        int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + CELL_SIZE * 2;
 
         int color = this.getColor(waterHeight);
 
@@ -173,6 +172,7 @@ class Cell {
     }
 }
 
+// A hexagonal cell of land.
 class HexCell extends Cell {
     Cell botLeft;
     Cell botRight;
@@ -181,7 +181,9 @@ class HexCell extends Cell {
         super(height, r, c);
         this.botLeft = this.botRight = null;
     }
-
+    
+    // takes in neighboring cells
+    // EFFECT: sets this neighboring cells to those
     void setNeighbors(Cell left, Cell top, Cell right, Cell botRight,
             Cell bottom, Cell botLeft) {
         super.setNeighbors(left, top, right, bottom);
@@ -190,6 +192,7 @@ class HexCell extends Cell {
     }
 
     @Override
+    // returns the neighbor in the specified direction.
     Cell getNeighbor(String dir) {
         if (dir.equals("botleft")) {
             return this.botLeft;
@@ -229,10 +232,8 @@ class HexCell extends Cell {
     // changes the colors according to the height and waterheight
     @Override
     WorldImage drawOnto(WorldImage background, int waterHeight) {
-        int offsetX = -(3 * ForbiddenIslandWorld.BACKGROUND_SIZE / 8) + CELL_SIZE
-                + CELL_SIZE / 2;
-        int offsetY = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + CELL_SIZE
-                + CELL_SIZE / 2;
+        int offsetX = -(3 * ForbiddenIslandWorld.BACKGROUND_SIZE / 8) + CELL_SIZE;
+        int offsetY = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + CELL_SIZE * 2;
         
         int color = this.getColor(waterHeight);
 
@@ -285,7 +286,7 @@ class OceanCell extends Cell {
     }
 }
 
-//A cell in the ocean.
+//A hexagonal cell in the ocean.
 class HexOceanCell extends HexCell {
     // initializes data
     HexOceanCell(int r, int c) {
@@ -497,18 +498,15 @@ class Player {
                 image);
         
         if (hex) {
-            int offsetX = -(3 * ForbiddenIslandWorld.BACKGROUND_SIZE / 8) + Cell.CELL_SIZE
-                    + Cell.CELL_SIZE / 2;
-            int offsetY = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + Cell.CELL_SIZE
-                    + Cell.CELL_SIZE / 2;
+            int offsetX = -(3 * ForbiddenIslandWorld.BACKGROUND_SIZE / 8) + Cell.CELL_SIZE;
+            int offsetY = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + Cell.CELL_SIZE * 2;
             
             return new OverlayOffsetImage(image,
                     cc * (3.0 / 4) * Cell.CELL_SIZE + offsetX,
                     rr * Cell.CELL_SIZE + Cell.CELL_SIZE / 2 * (cc % 2) + offsetY,
                     background);
         } else {
-            int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + Cell.CELL_SIZE
-                    / 2 + Cell.CELL_SIZE;
+            int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + Cell.CELL_SIZE * 2;
             
             return new OverlayOffsetImage(image,
                     cc * Cell.CELL_SIZE + offset,
@@ -549,6 +547,7 @@ class Target
         return false;
     }
     
+    // is this a scuba suit?
     boolean isScuba() {
         return false;
     }
@@ -586,6 +585,7 @@ class ScubaTarget extends Target
         super(r, c);
     }
     
+    // is this a scuba suit?
     @Override
     boolean isScuba() {
         return true;
@@ -668,7 +668,7 @@ class ForbiddenIslandWorld extends World {
     IList<Cell> board; // all the cells
     int waterHeight; // the height of the water
     static final int ISLAND_SIZE = 64; // constant val
-    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * (ISLAND_SIZE + 1) + Cell.CELL_SIZE;
+    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * (ISLAND_SIZE + 2) + Cell.CELL_SIZE / 2;
     Player player1;
     Player player2;
     final int WATERINCREASE = 1;
@@ -684,8 +684,6 @@ class ForbiddenIslandWorld extends World {
     // initializes data
     ForbiddenIslandWorld() {
         this.hex = false;
-        this.timeBeforeFlood = 10 * 
-                (ISLAND_SIZE - this.waterHeight) / WATERINCREASE;
         this.HELI = new HelicopterTarget(ISLAND_SIZE / 2, ISLAND_SIZE / 2);
         this.newBoard("m", ISLAND_SIZE);
     }
@@ -719,6 +717,8 @@ class ForbiddenIslandWorld extends World {
         }
         this.waterHeight = 0;
         this.tick = 0;
+        this.timeBeforeFlood = 10 * 
+                (ISLAND_SIZE - this.waterHeight) / WATERINCREASE;
         this.player1 = new Player(ISLAND_SIZE / 2, ISLAND_SIZE / 2,
                 this.cellAt(ISLAND_SIZE / 2, ISLAND_SIZE / 2));
         this.player2 = new Player(ISLAND_SIZE / 2 + 1, ISLAND_SIZE / 2 + 1,
@@ -821,7 +821,7 @@ class ForbiddenIslandWorld extends World {
         return result;
     }
     
-    // takes in a matrix of heights, creates a matrix of cells based on those
+    // takes in a matrix of heights, creates a matrix of hex cells based on those
     // heights with helicopter parts randomly dispersed.
     ArrayList<ArrayList<HexCell>> heightsToHexCells(
             ArrayList<ArrayList<Double>> heights) {
@@ -1114,6 +1114,8 @@ class ForbiddenIslandWorld extends World {
         return var;
     }
     
+    // creates a mountain, where the highest point is the center, and the cells are hexagons
+    // EFFECT: sets the board to a new hexagon mountain board.
     void makeHexMountain(int size) {
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         int midRow = size / 2;
@@ -1147,6 +1149,8 @@ class ForbiddenIslandWorld extends World {
         this.board = new Cons<Cell>(temp);
     }
     
+    // makes a diamond board with random heights all around, and the cells are hexagons
+    // EFFECT: sets the board to a new hexagon random board.
     void makeHexRandom(int size) {
         Random rand = new Random();
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
@@ -1180,6 +1184,8 @@ class ForbiddenIslandWorld extends World {
         this.board = new Cons<Cell>(temp);
     }
     
+    // makes a terrain board with random heights and random layout, with hexagon cells.
+    // EFFECT: sets the board to a new hexagon terrain board.
     void makeHexTerrain(int size) {
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         for (int i = 0; i < size + 1; i++) {
@@ -1193,8 +1199,9 @@ class ForbiddenIslandWorld extends World {
         int mid = size / 2;
 
         heights.get(0).set(mid, 1.0);
-        heights.get(size).set(size, 1.0);
-        heights.get(size).set(0, 1.0);
+        heights.get(size).set(mid, 1.0);
+        heights.get(mid).set(0, 1.0);
+        heights.get(mid).set(size, 1.0);
         heights.get(mid).set(mid, size / 2.0);
 
         // Fills top left quadrant.
@@ -1215,12 +1222,6 @@ class ForbiddenIslandWorld extends World {
         }
         
         this.board = new Cons<Cell>(temp);
-    }
-    
-    ArrayList<ArrayList<Double>> makeHexTerrainHelper(ArrayList<ArrayList<Double>> heights,
-            int rmin, int rmax, int cmin, int cmax,
-            boolean inverted, boolean onLeft, boolean onTop) {
-        return heights;
     }
 
     // is this position in bounds for the current board?
@@ -1253,6 +1254,7 @@ class ForbiddenIslandWorld extends World {
         }
     }
     
+    // translates hexagonal control keys to movement directions.
     String hexTranslate(String key) {
         if (key.equals("a") || key.equals("g")) {
             return "left";
@@ -1271,19 +1273,20 @@ class ForbiddenIslandWorld extends World {
         }
     }
     
-    public void movePlayer(int num, String key) {
+    // moves the player specified by num using the specified move
+    public void movePlayer(int num, String move) {
         Target retrieved;
         if (num == 1) {
             if (this.scuba.isActivated()) {
-                retrieved = this.player1.moveWater(key);
+                retrieved = this.player1.moveWater(move);
             } else {
-                retrieved = this.player1.move(key);
+                retrieved = this.player1.move(move);
             }
         } else {
             if (this.scuba.isActivated()) {
-                retrieved = this.player2.moveWater(key);
+                retrieved = this.player2.moveWater(move);
             } else {
-                retrieved = this.player2.move(key);
+                retrieved = this.player2.move(move);
             }
         }
         
