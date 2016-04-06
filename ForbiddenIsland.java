@@ -471,11 +471,11 @@ class ForbiddenIslandWorld extends World {
     int tick; // time
     IList<Target> targets; // a list of the targets that remain in the game
     int numParts; // number of helicopter parts
-    final HelicopterTarget heli; // the helicopter
+    final HelicopterTarget HELI; // the helicopter
 
     // initializes data
     ForbiddenIslandWorld() {
-        heli = new HelicopterTarget(ISLAND_SIZE / 2, ISLAND_SIZE / 2);
+        this.HELI = new HelicopterTarget(ISLAND_SIZE / 2, ISLAND_SIZE / 2);
         this.newBoard("m");
     }
 
@@ -508,7 +508,7 @@ class ForbiddenIslandWorld extends World {
     void generateCopterParts(ArrayList<ArrayList<Double>> heights)
     {
         Target t;
-        targets = new Cons<Target>(heli, new Empty<Target>());
+        targets = new Cons<Target>(HELI, new Empty<Target>());
         int counter = 0;
 
         // random indicies for helicopter parts
