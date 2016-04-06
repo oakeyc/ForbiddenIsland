@@ -1000,6 +1000,12 @@ class ExamplesIsland {
     Cell c4b;
     Cell c4r;
     Cell c4l;
+    
+    Empty<Integer> mt = new Empty<Integer>();
+    Cons<Integer> con1 = new Cons<Integer>(10, mt);
+    Cons<Integer> con2 = new Cons<Integer>(30, con1);
+    ArrayList<Integer> arrIn = new ArrayList<Integer>();
+    IListIterator<Integer> iter = new IListIterator<Integer>(con2);
 
     // initializes the forbidden island world.
     void gameInit() {
@@ -1158,7 +1164,31 @@ class ExamplesIsland {
         // ForbiddenIslandWorld.BACKGROUND_SIZE, .5);
     }
 
-    // tests 
+    // tests empty list
+    boolean testMtList(Tester t)
+    {
+        return t.checkExpect(mt.iterator(), new IListIterator<Integer>(mt)) && 
+                t.checkExpect(mt.isCons(), false) &&
+                t.checkExpect(mt.remove(10), mt);
+    }
+    
+    // tests cons list
+    boolean testCons(Tester t)
+    {
+        arrIn.add(20);
+        Cons<Integer> con3 = new Cons<Integer>(arrIn);
+
+        return t.checkExpect(con2.iterator(), new IListIterator<Integer>(con2)) && 
+                t.checkExpect(con1.isCons(), true) && 
+                t.checkExpect(con2.remove(30), con1) && 
+                t.checkExpect(con3.first, 20);
+    }
+    
+    boolean testIterator(Tester t)
+    {
+        
+    }
+    
 
     // main, runs the class
     public static void main(String[] args) {
