@@ -171,7 +171,7 @@ class Cell {
         return this.left.isFlooded() || this.right.isFlooded() || 
                 this.bottom.isFlooded() || this.top.isFlooded();
     }
-    
+
     boolean isCenter()
     {
         return this.r == ForbiddenIslandWorld.ISLAND_SIZE / 2 && 
@@ -212,7 +212,7 @@ class OceanCell extends Cell {
 interface IList<T> extends Iterable<T> {
     // Is this list a cons?
     boolean isCons();
-    
+
     // returns whether it was removed or not
     IList<T> remove(T t);
 }
@@ -229,7 +229,7 @@ class Empty<T> implements IList<T> {
     public boolean isCons() {
         return false;
     }
-    
+
     // returns whether removed or not
     public IList<T> remove(T t)
     {
@@ -272,7 +272,7 @@ class Cons<T> implements IList<T> {
     public boolean isCons() {
         return true;
     }
-    
+
     public IList<T> remove(T t)
     {
         if (this.first.equals(t))
@@ -390,7 +390,7 @@ class Target
         this.r = r;
         this.c = c;
     }
-    
+
     boolean isHeli()
     {
         return false;
@@ -424,7 +424,7 @@ class HelicopterTarget extends Target
     {
         return true;
     }
-    
+
     HelicopterTarget(int r, int c) {
         super(r, c);
     }
@@ -442,7 +442,7 @@ class HelicopterTarget extends Target
     boolean pickUp(Player p, int numParts)
     {
         return false;
-//        return p.onPoint(this.r, this.c) && numParts == 0;
+        //        return p.onPoint(this.r, this.c) && numParts == 0;
     }
 }
 
@@ -471,7 +471,7 @@ class ForbiddenIslandWorld extends World {
     // sets player to a new player with no progress at the center of the board,
     // resets waterHeight and tick to 0.
     void newBoard(String type) {
-        this.numParts = 3;
+        this.numParts = 1;
         if (type.equals("m")) {
             this.makeMountainBoard();
         } 
@@ -941,11 +941,10 @@ class ForbiddenIslandWorld extends World {
 
         WorldImage text = new AboveImage(new TextImage("Congratulations Winner!", 
                 textSize, Color.MAGENTA),
-                new AboveImage(
-                        new TextImage("Player 1's steps: " + player1.steps,
-                                textSize, Color.MAGENTA)),
-                                new TextImage("Player 2's steps: " + player2.steps, 
-                                        textSize, Color.MAGENTA));
+                new TextImage("Player 1's steps: " + player1.steps,
+                        textSize, Color.MAGENTA),
+                new TextImage("Player 2's steps: " + player2.steps, 
+                        textSize, Color.MAGENTA));
 
         return new OverlayImage(text, image);
     }
@@ -968,11 +967,10 @@ class ForbiddenIslandWorld extends World {
 
             WorldImage text = new AboveImage(
                     new TextImage("GAME OVER!", textSize, Color.MAGENTA),
-                    new AboveImage(
-                            new TextImage("Player 1's steps: " + player1.steps,
-                                    textSize, Color.MAGENTA)),
-                                    new TextImage("Player 2's steps: " + player2.steps, 
-                                            textSize, Color.MAGENTA));
+                    new TextImage("Player 1's steps: " + player1.steps,
+                            textSize, Color.MAGENTA),
+                    new TextImage("Player 2's steps: " + player2.steps, 
+                            textSize, Color.MAGENTA));
             return new OverlayImage(text, image);
         }
     }
