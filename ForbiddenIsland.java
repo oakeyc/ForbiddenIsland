@@ -15,7 +15,7 @@ import javalib.worldimages.*;
 // A cell of land.
 class Cell {
 
-    static final int CELL_SIZE = 10; // size of the drawn cell
+    static final int CELL_SIZE = 15; // size of the drawn cell
     double height;
     int r; // row position
     int c; // column position
@@ -192,9 +192,9 @@ class HexCell extends Cell {
 
     @Override
     Cell getNeighbor(String dir) {
-        if (dir.equals("down left")) {
+        if (dir.equals("botleft")) {
             return this.botLeft;
-        } else if (dir.equals("down right")) {
+        } else if (dir.equals("botright")) {
             return this.botRight;
         } else {
             return super.getNeighbor(dir);
@@ -230,12 +230,15 @@ class HexCell extends Cell {
     // changes the colors according to the height and waterheight
     @Override
     WorldImage drawOnto(WorldImage background, int waterHeight) {
-        int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + CELL_SIZE;
-
+        int offsetX = -(3 * ForbiddenIslandWorld.BACKGROUND_SIZE / 8) + CELL_SIZE
+                + CELL_SIZE / 2;
+        int offsetY = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + CELL_SIZE
+                + CELL_SIZE / 2;
+        
         int color = this.getColor(waterHeight);
 
-        int cc = ForbiddenIslandWorld.ISLAND_SIZE / 2 - this.c - 1;
-        int rr = ForbiddenIslandWorld.ISLAND_SIZE / 2 - this.r - 1;
+        int cc = ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1;
+        int rr = ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1;
 
         WorldImage cell = new HexagonImage(CELL_SIZE / 2 + 2, "solid",
                 new Color(color));
@@ -249,8 +252,8 @@ class HexCell extends Cell {
             cell = new OverlayImage(copter, cell);
         }
         return new OverlayOffsetImage(cell,
-                cc * (3 / 4.0) * CELL_SIZE + offset,
-                rr * CELL_SIZE + CELL_SIZE / 2 * (cc % 2) + offset,
+                cc * (3.0 / 4) * CELL_SIZE + offsetX,
+                rr * CELL_SIZE + CELL_SIZE / 2 * (cc % 2) + offsetY,
                 background);
     }
 }
@@ -260,6 +263,37 @@ class OceanCell extends Cell {
 
     // initializes data
     OceanCell(int r, int c) {
+        super(0, r, c);
+        this.isFlooded = true; // always true
+    }
+
+    // EFFECT: Sets the flooded state of this ocean cell, which is always true.
+    @Override
+    void setFlooded(boolean isFlooded) {
+        // does not want it to ever change state
+    }
+
+    // compares the height of this ocean cell to the height of that cell.
+    // Returns: the height of that cell, which is
+    // 0 if height of that is even with ocean level.
+    // <0 if height of that is below ocean level.
+    // >0 if height of that is above ocean level.
+    @Override
+    double compareHeight(Cell that) {
+        return -that.height;
+    }
+
+    // Draws this ocean cell onto the given background.
+    @Override
+    WorldImage drawOnto(WorldImage background, int waterHeight) {
+        return background;
+    }
+}
+
+//A cell in the ocean.
+class HexOceanCell extends HexCell {
+    // initializes data
+    HexOceanCell(int r, int c) {
         super(0, r, c);
         this.isFlooded = true; // always true
     }
@@ -419,20 +453,37 @@ class Player {
     }
 
     // given an image, it draws this image onto it
-    WorldImage drawOnto(WorldImage background) {
-        int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + Cell.CELL_SIZE
-                / 2 + Cell.CELL_SIZE;
+    WorldImage drawOnto(WorldImage background, boolean hex) {
+        int cc = ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1;
+        int rr = ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1;
+
+        
         double scale = 0.5 * Cell.CELL_SIZE / 15;
 
         WorldImage image = new ScaleImage(new FromFileImage(
                 "Images/pilot-icon.png"), scale);
         image = new OverlayImage(new TextImage(this.steps + "", 8, Color.RED),
                 image);
-        return new OverlayOffsetImage(image, (ForbiddenIslandWorld.ISLAND_SIZE
-                - this.c - 1)
-                * Cell.CELL_SIZE + offset, (ForbiddenIslandWorld.ISLAND_SIZE
-                - this.r - 1)
-                * Cell.CELL_SIZE + offset, background);
+        
+        if (hex) {
+            int offsetX = -(3 * ForbiddenIslandWorld.BACKGROUND_SIZE / 8) + Cell.CELL_SIZE
+                    + Cell.CELL_SIZE / 2;
+            int offsetY = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + Cell.CELL_SIZE
+                    + Cell.CELL_SIZE / 2;
+            
+            return new OverlayOffsetImage(image,
+                    cc * (3.0 / 4) * Cell.CELL_SIZE + offsetX,
+                    rr * Cell.CELL_SIZE + Cell.CELL_SIZE / 2 * (cc % 2) + offsetY,
+                    background);
+        } else {
+            int offset = -ForbiddenIslandWorld.BACKGROUND_SIZE / 2 + Cell.CELL_SIZE
+                    / 2 + Cell.CELL_SIZE;
+            
+            return new OverlayOffsetImage(image,
+                    cc * Cell.CELL_SIZE + offset,
+                    rr * Cell.CELL_SIZE + offset,
+                    background);
+        }
     }
 }
 
@@ -535,26 +586,26 @@ class ForbiddenIslandWorld extends World {
 
         // updates the neighboring cells for each cell
         Cell offBoard = new OceanCell(-1, -1);
-        for (int i = 0; i < result.size(); i++) {
-            ArrayList<Cell> row = result.get(i);
-            for (int j = 0; j < row.size(); j++) {
-                Cell curr = row.get(j);
+        for (int r = 0; r < result.size(); r++) {
+            ArrayList<Cell> row = result.get(r);
+            for (int c = 0; c < row.size(); c++) {
+                Cell curr = row.get(c);
                 Cell left = offBoard;
                 Cell right = offBoard;
                 Cell top = offBoard;
                 Cell bottom = offBoard;
-
-                if (onBoard(i, j - 1)) {
-                    left = result.get(i).get(j - 1);
+                
+                if (onBoard(r, c - 1)) {
+                    left = row.get(c - 1);
                 }
-                if (onBoard(i - 1, j)) {
-                    top = result.get(i - 1).get(j);
+                if (onBoard(r - 1, c)) {
+                    top = result.get(r - 1).get(c);
                 }
-                if (onBoard(i, j + 1)) {
-                    right = result.get(i).get(j + 1);
+                if (onBoard(r, c + 1)) {
+                    right = row.get(c + 1);
                 }
-                if (onBoard(i + 1, j)) {
-                    bottom = result.get(i + 1).get(j);
+                if (onBoard(r + 1, c)) {
+                    bottom = result.get(r + 1).get(c);
                 }
 
                 curr.setNeighbors(left, top, right, bottom);
@@ -566,9 +617,9 @@ class ForbiddenIslandWorld extends World {
     
  // takes in a matrix of heights, creates a matrix of cells based on those
     // heights with helicopter parts randomly dispersed.
-    ArrayList<ArrayList<Cell>> heightsToHexCells(
+    ArrayList<ArrayList<HexCell>> heightsToHexCells(
             ArrayList<ArrayList<Double>> heights) {
-        ArrayList<ArrayList<Cell>> result = new ArrayList<ArrayList<Cell>>();
+        ArrayList<ArrayList<HexCell>> result = new ArrayList<ArrayList<HexCell>>();
         ArrayList<Integer> parts = new ArrayList<Integer>();
 
         // random indicies for helicopter parts
@@ -583,12 +634,12 @@ class ForbiddenIslandWorld extends World {
 
         for (int i = 0; i < heights.size(); i++) {
             ArrayList<Double> hRow = heights.get(i);
-            ArrayList<Cell> newRow = new ArrayList<Cell>();
+            ArrayList<HexCell> newRow = new ArrayList<HexCell>();
             for (int j = 0; j < hRow.size(); j++) {
                 if (hRow.get(j) == 0) {
-                    newRow.add(new OceanCell(i, j));
+                    newRow.add(new HexOceanCell(i, j));
                 } else {
-                    Cell temp = new HexCell(hRow.get(j), i, j);
+                    HexCell temp = new HexCell(hRow.get(j), i, j);
                     if (inPart(i, heights.get(i).size(), j, parts)) {
                         temp.givePart();
                     }
@@ -599,32 +650,42 @@ class ForbiddenIslandWorld extends World {
         }
 
         // updates the neighboring cells for each cell
-//        Cell offBoard = new OceanCell(-1, -1);
-//        for (int i = 0; i < result.size(); i++) {
-//            ArrayList<Cell> row = result.get(i);
-//            for (int j = 0; j < row.size(); j++) {
-//                Cell curr = row.get(j);
-//                Cell left = offBoard;
-//                Cell right = offBoard;
-//                Cell top = offBoard;
-//                Cell bottom = offBoard;
-//
-//                if (onBoard(i, j - 1)) {
-//                    left = result.get(i).get(j - 1);
-//                }
-//                if (onBoard(i - 1, j)) {
-//                    top = result.get(i - 1).get(j);
-//                }
-//                if (onBoard(i, j + 1)) {
-//                    right = result.get(i).get(j + 1);
-//                }
-//                if (onBoard(i + 1, j)) {
-//                    bottom = result.get(i + 1).get(j);
-//                }
-//
-//                curr.setNeighbors(left, top, right, bottom);
-//            }
-//        }
+        Cell offBoard = new HexOceanCell(-1, -1);
+        for (int r = 0; r < result.size(); r++) {
+            ArrayList<HexCell> row = result.get(r);
+            for (int c = 0; c < row.size(); c++) {
+                HexCell curr = row.get(c);
+                Cell left = offBoard;
+                Cell right = offBoard;
+                Cell top = offBoard;
+                Cell bottom = offBoard;
+                Cell botRight = offBoard;
+                Cell botLeft = offBoard;
+
+                int mod = c % 2;
+                
+                if (onBoard(r - 1, c)) {
+                    top = result.get(r - 1).get(c);
+                }
+                if (onBoard(r + 1, c)) {
+                    bottom = result.get(r + 1).get(c);
+                }
+                if (onBoard(r - ((mod + 1) % 2), c + 1)) {
+                    right = result.get(r - ((mod + 1) % 2)).get(c + 1);
+                }
+                if (onBoard(r - ((mod + 1) % 2), c - 1)) {
+                    left = result.get(r - ((mod + 1) % 2)).get(c - 1);
+                }
+                if (onBoard(r + mod, c + 1)) {
+                    botRight = result.get(r + mod).get(c + 1);
+                }
+                if (onBoard(r + mod, c - 1)) {
+                    botLeft = result.get(r + mod).get(c - 1);
+                }
+
+                curr.setNeighbors(left, top, right, botRight, bottom, botLeft);
+            }
+        }
 
         return result;
     }
@@ -875,18 +936,95 @@ class ForbiddenIslandWorld extends World {
             heights.add(row);
         }
         
-        ArrayList<ArrayList<Cell>> cells = this.heightsToHexCells(heights);
+        ArrayList<ArrayList<HexCell>> cells = this.heightsToHexCells(heights);
         ArrayList<Cell> temp = new ArrayList<Cell>();
-        for (ArrayList<Cell> row : cells) {
-            temp.addAll(row);
+        for (ArrayList<HexCell> row : cells) {
+            for (HexCell cell : row) {
+                temp.add(cell);
+            }
         }
         
         this.board = new Cons<Cell>(temp);
     }
     
-    void makeHexRandom() {}
+    void makeHexRandom() {
+        Random rand = new Random();
+        ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
+        int midRow = ISLAND_SIZE / 2;
+        int midCol = ISLAND_SIZE / 2;
+        
+        for (int r = 0; r < ISLAND_SIZE + 1; r ++) {
+            ArrayList<Double> row = new ArrayList<Double>();
+            for (int c = 0; c < ISLAND_SIZE + 1; c ++) {
+                int x = (c - midCol) - ((r - midRow) - ((r - midRow) % 2)) / 2;
+                int z = (r - midRow);
+                int y = -x - z;
+                double manhatDist = Math.max(Math.max(Math.abs(x), Math.abs(y)), Math.abs(z));
+                if (manhatDist < ISLAND_SIZE / 2) {
+                    row.add(rand.nextDouble() * ISLAND_SIZE / 2.0);
+                }
+                else {
+                    row.add(0.0);
+                }
+            }
+            heights.add(row);
+        }
+        
+        ArrayList<ArrayList<HexCell>> cells = this.heightsToHexCells(heights);
+        ArrayList<Cell> temp = new ArrayList<Cell>();
+        for (ArrayList<HexCell> row : cells) {
+            for (HexCell cell : row) {
+                temp.add(cell);
+            }
+        }
+        
+        this.board = new Cons<Cell>(temp);
+    }
     
-    void makeHexTerrain() {}
+    void makeHexTerrain() {
+        ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
+        for (int i = 0; i < ISLAND_SIZE + 1; i++) {
+            ArrayList<Double> row = new ArrayList<Double>();
+            for (int j = 0; j < ISLAND_SIZE + 1; j++) {
+                row.add(0.0);
+            }
+            heights.add(row);
+        }
+
+        int mid = ISLAND_SIZE / 2;
+        int max = ISLAND_SIZE;
+
+        heights.get(0).set(mid, 1.0);
+        heights.get(max).set(mid, 1.0);
+        heights.get(mid).set(0, 1.0);
+        heights.get(mid).set(max, 1.0);
+        heights.get(mid).set(mid, ISLAND_SIZE / 2.0);
+
+        // Fills top left quadrant.
+        heights = this.makeHexTerrainHelper(heights, 0, mid, 0, mid, true, true);
+        // Fills top right quadrant.
+        heights = this.makeHexTerrainHelper(heights, 0, mid, mid, max, false, true);
+        // Fills bottom left quadrant.
+        heights = this.makeHexTerrainHelper(heights, mid, max, 0, mid, true, false);
+        // Fills bottom right quadrant.
+        heights = this.makeHexTerrainHelper(heights, mid, max, mid, max, false, false);
+        
+        ArrayList<ArrayList<HexCell>> cells = this.heightsToHexCells(heights);
+        ArrayList<Cell> temp = new ArrayList<Cell>();
+        for (ArrayList<HexCell> row : cells) {
+            for (HexCell cell : row) {
+                temp.add(cell);
+            }
+        }
+        
+        this.board = new Cons<Cell>(temp);
+    }
+    
+    ArrayList<ArrayList<Double>> makeHexTerrainHelper(ArrayList<ArrayList<Double>> heights,
+            int rmin, int rmax, int cmin, int cmax,
+            boolean inverted, boolean onLeft, boolean onTop) {
+        return heights;
+    }
 
     // is this position in bounds for the current board?
     boolean onBoard(int r, int c) {
@@ -917,27 +1055,59 @@ class ForbiddenIslandWorld extends World {
             return "bad"; // i can guarentee "bad" won't mean anything
         }
     }
+    
+    String hexTranslate(String key) {
+        if (key.equals("a") || key.equals("g")) {
+            return "left";
+        } else if (key.equals("w") || key.equals("y")) {
+            return "up";
+        } else if (key.equals("e") || key.equals("u")) {
+            return "right";
+        } else if (key.equals("d") || key.equals("j")) {
+            return "botright";
+        } else if (key.equals("x") || key.equals("n")) {
+            return "down";
+        } else if (key.equals("z") || key.equals("b")) {
+            return "botleft";
+        } else {
+            return "bad";
+        }
+    }
 
     // changes the state of the world given a key stroke
     @Override
     public void onKeyEvent(String key) {
-        // moves the player
-        if (key.equals("up") || key.equals("down") || key.equals("left")
-                || key.equals("right")) {
-            if (this.player1.move(key)) {
-                this.numParts--;
+        if (this.hex) {
+            if (key.equals("a") || key.equals("w") || key.equals("e")
+                    || key.equals("d") || key.equals("x") || key.equals("z")) {
+                if (this.player1.move(this.hexTranslate(key))) {
+                    this.numParts--;
+                }
             }
-        }
+            
+            if (key.equals("g") || key.equals("y") || key.equals("u")
+                    || key.equals("j") || key.equals("n") || key.equals("b")) {
+                if (this.player2.move(this.hexTranslate(key)));
+            }
+        } else {
+            // moves the player
+            if (key.equals("up") || key.equals("down") || key.equals("left")
+                    || key.equals("right")) {
+                if (this.player1.move(key)) {
+                    this.numParts--;
+                }
+            }
 
-        if (key.equals("a") || key.equals("w") || key.equals("d")
-                || key.equals("s")) {
-            if (this.player2.move(translate(key))) {
-                this.numParts--;
+            if (key.equals("a") || key.equals("w") || key.equals("d")
+                    || key.equals("s")) {
+                if (this.player2.move(translate(key))) {
+                    this.numParts--;
+                }
             }
         }
 
         // new islands
-        else if (key.equals("m") || key.equals("r") || key.equals("t")) {
+        if (key.equals("m") || key.equals("r") || key.equals("t")) {
             this.newBoard(key);
         }
         
@@ -987,7 +1157,7 @@ class ForbiddenIslandWorld extends World {
             image = cell.drawOnto(image, this.waterHeight);
         }
 
-        image = this.player2.drawOnto(this.player1.drawOnto(image));
+        image = this.player2.drawOnto(this.player1.drawOnto(image, this.hex), this.hex);
 
         scene.placeImageXY(image, BACKGROUND_SIZE / 2, BACKGROUND_SIZE / 2);
         return scene;
@@ -1015,7 +1185,8 @@ class ForbiddenIslandWorld extends World {
             image = cell.drawOnto(image, this.waterHeight);
         }
 
-        image = this.player1.drawOnto(image);
+        image = this.player1.drawOnto(image, this.hex);
+        image = this.player2.drawOnto(image, this.hex);
 
         int textSize = 60 * ISLAND_SIZE / 64 * Cell.CELL_SIZE / 15;
 
@@ -1040,7 +1211,8 @@ class ForbiddenIslandWorld extends World {
                 image = cell.drawOnto(image, this.waterHeight);
             }
 
-            image = this.player1.drawOnto(image);
+            image = this.player1.drawOnto(image, this.hex);
+            image = this.player2.drawOnto(image, this.hex);
 
             int textSize = 60 * ISLAND_SIZE / 64 * Cell.CELL_SIZE / 15;
 
