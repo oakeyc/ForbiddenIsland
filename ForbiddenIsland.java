@@ -1,4 +1,3 @@
-
 // Assignment 9
 // Oka Courtney
 // okac
@@ -273,6 +272,8 @@ class Cons<T> implements IList<T> {
         return true;
     }
 
+    // removes a given element from a list
+    // returns the new IList
     public IList<T> remove(T t)
     {
         if (this.first.equals(t))
@@ -368,11 +369,13 @@ class Player {
                 Cell.CELL_SIZE + offset, background);
     }
 
+    // if the player is on the highest point
     boolean onHighestPoint()
     {
         return curr.isCenter();
     }
 
+    // if this player is on this point
     boolean onPoint(int r, int c)
     {
         return this.r == r && this.c == c;
@@ -385,27 +388,32 @@ class Target
     int r;
     int c; // positions
 
+    // ctor
     Target(int r, int c)
     {
         this.r = r;
         this.c = c;
     }
 
+    // if this is a helicopter
     boolean isHeli()
     {
         return false;
     }
 
-    boolean pickUp(Player p, int numParts)
+    // if this player picks up this item
+    boolean pickUp(Player p)
     {
         return p.onPoint(this.r, this.c);
     }
 
+    // if this target is on the same position as something
     boolean samePos(int r, int c)
     {
         return this.r == r && this.c == c;
     }
 
+    // given a base, draws the target onto it
     WorldImage drawOnto(WorldImage base)
     {
         double scale = 0.5 * Cell.CELL_SIZE / 15;
@@ -420,15 +428,18 @@ class Target
 // represents the helicopter in the center
 class HelicopterTarget extends Target
 {
-    boolean isHeli()
-    {
-        return true;
-    }
-
+    // the ctor
     HelicopterTarget(int r, int c) {
         super(r, c);
     }
 
+    // it is a helicopter
+    boolean isHeli()
+    {
+        return true;
+    }
+    
+    // given a base, draws the target onto it
     WorldImage drawOnto(WorldImage base)
     {
         double scale = 0.5 * Cell.CELL_SIZE / 15;
@@ -439,15 +450,17 @@ class HelicopterTarget extends Target
         return new OverlayImage(copt, base);
     }
 
-    boolean pickUp(Player p, int numParts)
+    // if this can be picked up
+    // it can never be picked up
+    boolean pickUp(Player p)
     {
         return false;
-        //        return p.onPoint(this.r, this.c) && numParts == 0;
     }
 }
 
 // represents a forbidden island game that is aw world
 class ForbiddenIslandWorld extends World {
+    
     IList<Cell> board; // all the cells
     int waterHeight; // the height of the water
     static final int ISLAND_SIZE = 64; // constant val
@@ -458,7 +471,7 @@ class ForbiddenIslandWorld extends World {
     int tick; // time
     IList<Target> targets; // a list of the targets that remain in the game
     int numParts; // number of helicopter parts
-    final HelicopterTarget heli;
+    final HelicopterTarget heli; // the helicopter
 
     // initializes data
     ForbiddenIslandWorld() {
@@ -471,7 +484,7 @@ class ForbiddenIslandWorld extends World {
     // sets player to a new player with no progress at the center of the board,
     // resets waterHeight and tick to 0.
     void newBoard(String type) {
-        this.numParts = 1;
+        this.numParts = 4;
         if (type.equals("m")) {
             this.makeMountainBoard();
         } 
@@ -841,7 +854,7 @@ class ForbiddenIslandWorld extends World {
             if (this.player1.move(key)) {
                 for (Target t: this.targets)
                 {
-                    if (t.pickUp(this.player1, this.numParts))
+                    if (t.pickUp(this.player1))
                     {
                         this.targets.remove(t);
                     }
@@ -856,7 +869,7 @@ class ForbiddenIslandWorld extends World {
             {
                 for (Target t: this.targets)
                 {
-                    if (t.pickUp(player2, this.numParts))
+                    if (t.pickUp(player2))
                     {
                         this.targets.remove(t);
                     }
