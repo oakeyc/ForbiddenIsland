@@ -234,10 +234,10 @@ class HexCell extends Cell {
 
         int color = this.getColor(waterHeight);
 
-        int cc = ForbiddenIslandWorld.ISLAND_SIZE - this.c - 1;
-        int rr = ForbiddenIslandWorld.ISLAND_SIZE - this.r - 1;
+        int cc = ForbiddenIslandWorld.ISLAND_SIZE / 2 - this.c - 1;
+        int rr = ForbiddenIslandWorld.ISLAND_SIZE / 2 - this.r - 1;
 
-        WorldImage cell = new HexagonImage(CELL_SIZE / 2 + 1, "solid",
+        WorldImage cell = new HexagonImage(CELL_SIZE / 2 + 2, "solid",
                 new Color(color));
 
         if (this.hasPart) {
@@ -249,8 +249,8 @@ class HexCell extends Cell {
             cell = new OverlayImage(copter, cell);
         }
         return new OverlayOffsetImage(cell,
-                2 * cc * CELL_SIZE + offset + CELL_SIZE * ((rr + 1) % 2),
-                rr * CELL_SIZE / 2 + offset / 2,
+                cc * (3 / 4.0) * CELL_SIZE + offset,
+                rr * CELL_SIZE + CELL_SIZE / 2 * (cc % 2) + offset,
                 background);
     }
 }
@@ -441,7 +441,7 @@ class ForbiddenIslandWorld extends World {
     IList<Cell> board; // all the cells
     int waterHeight; // the height of the water
     static final int ISLAND_SIZE = 64; // constant val
-    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * ISLAND_SIZE * 2 + Cell.CELL_SIZE;
+    static final int BACKGROUND_SIZE = Cell.CELL_SIZE * (ISLAND_SIZE + 1) + Cell.CELL_SIZE;
     Player player1;
     Player player2;
     final int WATERINCREASE = 1;
@@ -461,11 +461,23 @@ class ForbiddenIslandWorld extends World {
     void newBoard(String type) {
         this.numParts = 6;
         if (type.equals("m")) {
-            this.makeMountainBoard();
+            if (this.hex) {
+                this.makeHexMountain();
+            } else {
+                this.makeMountainBoard();
+            }
         } else if (type.equals("r")) {
-            this.makeRandomBoard();
+            if (this.hex) {
+                this.makeHexRandom();
+            } else {
+                this.makeRandomBoard();
+            }
         } else if (type.equals("t")) {
-            this.makeTerrainBoard();
+            if (this.hex) {
+                this.makeHexTerrain();
+            } else {
+                this.makeTerrainBoard();
+            }
         } else {
             throw new IllegalArgumentException("Not a valid board type.");
         }
@@ -511,7 +523,7 @@ class ForbiddenIslandWorld extends World {
                 if (hRow.get(j) == 0) {
                     newRow.add(new OceanCell(i, j));
                 } else {
-                    Cell temp = new HexCell(hRow.get(j), i, j);
+                    Cell temp = new Cell(hRow.get(j), i, j);
                     if (inPart(i, heights.get(i).size(), j, parts)) {
                         temp.givePart();
                     }
@@ -551,10 +563,76 @@ class ForbiddenIslandWorld extends World {
 
         return result;
     }
+    
+ // takes in a matrix of heights, creates a matrix of cells based on those
+    // heights with helicopter parts randomly dispersed.
+    ArrayList<ArrayList<Cell>> heightsToHexCells(
+            ArrayList<ArrayList<Double>> heights) {
+        ArrayList<ArrayList<Cell>> result = new ArrayList<ArrayList<Cell>>();
+        ArrayList<Integer> parts = new ArrayList<Integer>();
+
+        // random indicies for helicopter parts
+        while (parts.size() <= numParts) {
+            int indexOuter = (int) (Math.random() * heights.size());
+            int indexInner = (int) (Math.random() * heights.get(0).size());
+
+            if (heights.get(indexOuter).get(indexInner) >= 5) {
+                parts.add(indexOuter * heights.get(0).size() + indexInner);
+            }
+        }
+
+        for (int i = 0; i < heights.size(); i++) {
+            ArrayList<Double> hRow = heights.get(i);
+            ArrayList<Cell> newRow = new ArrayList<Cell>();
+            for (int j = 0; j < hRow.size(); j++) {
+                if (hRow.get(j) == 0) {
+                    newRow.add(new OceanCell(i, j));
+                } else {
+                    Cell temp = new HexCell(hRow.get(j), i, j);
+                    if (inPart(i, heights.get(i).size(), j, parts)) {
+                        temp.givePart();
+                    }
+                    newRow.add(temp);
+                }
+            }
+            result.add(newRow);
+        }
+
+        // updates the neighboring cells for each cell
+//        Cell offBoard = new OceanCell(-1, -1);
+//        for (int i = 0; i < result.size(); i++) {
+//            ArrayList<Cell> row = result.get(i);
+//            for (int j = 0; j < row.size(); j++) {
+//                Cell curr = row.get(j);
+//                Cell left = offBoard;
+//                Cell right = offBoard;
+//                Cell top = offBoard;
+//                Cell bottom = offBoard;
+//
+//                if (onBoard(i, j - 1)) {
+//                    left = result.get(i).get(j - 1);
+//                }
+//                if (onBoard(i - 1, j)) {
+//                    top = result.get(i - 1).get(j);
+//                }
+//                if (onBoard(i, j + 1)) {
+//                    right = result.get(i).get(j + 1);
+//                }
+//                if (onBoard(i + 1, j)) {
+//                    bottom = result.get(i + 1).get(j);
+//                }
+//
+//                curr.setNeighbors(left, top, right, bottom);
+//            }
+//        }
+
+        return result;
+    }
 
     // creates a mountain, where the highest point is the center
     // EFFECT: sets the board to a new mountain board.
     void makeMountainBoard() {
+        this.hex = false;
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         double middle = ISLAND_SIZE / 2.0;
 
@@ -584,6 +662,7 @@ class ForbiddenIslandWorld extends World {
     // makes a diamond board with random heights all around
     // EFFECT: sets the board to a new random board.
     void makeRandomBoard() {
+        this.hex = false;
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         double middle = ISLAND_SIZE / 2.0;
         Random rand = new Random();
@@ -592,7 +671,7 @@ class ForbiddenIslandWorld extends World {
             ArrayList<Double> row = new ArrayList<Double>();
             for (int j = 0; j < ISLAND_SIZE + 1; j++) {
                 double manhatDist = Math.abs(i - middle) + Math.abs(j - middle);
-                if (manhatDist < middle) {
+                if (manhatDist < middle - 1) {
                     row.add(rand.nextDouble() * middle);
                 } else {
                     row.add(0.0);
@@ -614,6 +693,7 @@ class ForbiddenIslandWorld extends World {
     // makes a terrain board with random heights and random layout.
     // EFFECT: sets the board to a new terrain board.
     void makeTerrainBoard() {
+        this.hex = false;
         ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
         for (int i = 0; i < ISLAND_SIZE + 1; i++) {
             ArrayList<Double> row = new ArrayList<Double>();
@@ -772,6 +852,41 @@ class ForbiddenIslandWorld extends World {
         }
         return var;
     }
+    
+    void makeHexMountain() {
+        ArrayList<ArrayList<Double>> heights = new ArrayList<ArrayList<Double>>();
+        int midRow = ISLAND_SIZE / 2;
+        int midCol = ISLAND_SIZE / 2;
+        
+        for (int r = 0; r < ISLAND_SIZE + 1; r ++) {
+            ArrayList<Double> row = new ArrayList<Double>();
+            for (int c = 0; c < ISLAND_SIZE + 1; c ++) {
+                int x = (c - midCol) - ((r - midRow) - ((r - midRow) % 2)) / 2;
+                int z = (r - midRow);
+                int y = -x - z;
+                double manhatDist = Math.max(Math.max(Math.abs(x), Math.abs(y)), Math.abs(z));
+                if (manhatDist < ISLAND_SIZE / 2) {
+                    row.add(ISLAND_SIZE / 2 - manhatDist);
+                }
+                else {
+                    row.add(0.0);
+                }
+            }
+            heights.add(row);
+        }
+        
+        ArrayList<ArrayList<Cell>> cells = this.heightsToHexCells(heights);
+        ArrayList<Cell> temp = new ArrayList<Cell>();
+        for (ArrayList<Cell> row : cells) {
+            temp.addAll(row);
+        }
+        
+        this.board = new Cons<Cell>(temp);
+    }
+    
+    void makeHexRandom() {}
+    
+    void makeHexTerrain() {}
 
     // is this position in bounds for the current board?
     boolean onBoard(int r, int c) {
@@ -825,6 +940,12 @@ class ForbiddenIslandWorld extends World {
         else if (key.equals("m") || key.equals("r") || key.equals("t")) {
             this.newBoard(key);
         }
+        
+        // toggles hexagons
+        else if (key.equals("h")) {
+            this.hex = !this.hex;
+            this.newBoard("m");
+        }
     }
 
     // changes the state of the world
@@ -860,7 +981,7 @@ class ForbiddenIslandWorld extends World {
     @Override
     public WorldScene makeScene() {
         WorldScene scene = this.getEmptyScene();
-        WorldImage image = new RectangleImage(BACKGROUND_SIZE, BACKGROUND_SIZE / 2,
+        WorldImage image = new RectangleImage(BACKGROUND_SIZE, BACKGROUND_SIZE,
                 "solid", new Color(0x80));
         for (Cell cell : this.board) {
             image = cell.drawOnto(image, this.waterHeight);
