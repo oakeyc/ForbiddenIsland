@@ -1000,18 +1000,30 @@ class ExamplesIsland {
     Cell c4b;
     Cell c4r;
     Cell c4l;
+    Cell center;
     
     Empty<Integer> mt = new Empty<Integer>();
-    Cons<Integer> con1 = new Cons<Integer>(10, mt);
-    Cons<Integer> con2 = new Cons<Integer>(30, con1);
+    Cons<Integer> con1 = new Cons<Integer>(10, this.mt);
+    Cons<Integer> con2 = new Cons<Integer>(30, this.con1);
     ArrayList<Integer> arrIn = new ArrayList<Integer>();
-    IListIterator<Integer> iter = new IListIterator<Integer>(con2);
-
+    IListIterator<Integer> iter = new IListIterator<Integer>(this.con2);
+    IListIterator<Integer> itermt=  new IListIterator<Integer>(this.mt);
+   
+    Player p1;
+    Player p2;
+    
     // initializes the forbidden island world.
     void gameInit() {
         this.game = new ForbiddenIslandWorld();
     }
 
+    // initializes player data
+    void playerInit()
+    {
+        this.p1 = new Player(0, 0, c1);
+        this.p2 = new Player(12, 5, c4);
+ 
+    }
     // initializes the data for testing
     void cellInit() {
         Cell oc = new OceanCell(-1, -1);
@@ -1023,11 +1035,13 @@ class ExamplesIsland {
         this.c4b = new Cell(9, 5, 6);
         this.c4r = new Cell(13, 6, 5);
         this.c4l = new Cell(11, 4, 5);
-        c4t.setNeighbors(oc, oc, oc, this.c4);
-        c4b.setNeighbors(oc, this.c4, oc, oc);
-        c4r.setNeighbors(this.c4, oc, oc, oc);
-        c4l.setNeighbors(oc, oc, this.c4, oc);
+        this.c4t.setNeighbors(oc, oc, oc, this.c4);
+        this.c4b.setNeighbors(oc, this.c4, oc, oc);
+        this.c4r.setNeighbors(this.c4, oc, oc, oc);
+        this.c4l.setNeighbors(oc, oc, this.c4, oc);
         this.c4.setNeighbors(this.c4l, this.c4t, this.c4r, this.c4b);
+        this.center = new Cell(64, ForbiddenIslandWorld.ISLAND_SIZE / 2, 
+                ForbiddenIslandWorld.ISLAND_SIZE / 2);
     }
 
     // initializes the board data
@@ -1184,9 +1198,78 @@ class ExamplesIsland {
                 t.checkExpect(con3.first, 20);
     }
     
+    // tests the ilist iterator
     boolean testIterator(Tester t)
     {
+        return t.checkExpect(iter.hasNext(), true) && 
+                t.checkExpect(itermt.hasNext(), false) && 
+                t.checkExpect(iter.next(), 30);           
+    }
+    
+    // tests canMove in player class
+    boolean testCanMove(Tester t)
+    {
+        cellInit();
+        playerInit();
         
+        return t.checkExpect(p1.canMove("down"), true) && 
+                t.checkExpect(p2.canMove("up"), false) && 
+                t.checkExpect(p2.canMove("left"), false) && 
+                t.checkExpect(p2.canMove("right"), false);
+    }
+    
+    // tests the move method in player class
+    boolean testMove(Tester t)
+    {
+        cellInit();
+        playerInit();
+        
+        return t.checkExpect(p1.move("right"), false) && 
+                t.checkExpect(p2.move("up"), false) &&
+                t.checkExpect(p1.move("right"), false);
+    }
+    
+    // tests if a player is on flooded cell
+    boolean testOnFlooded(Tester t)
+    {
+        cellInit();
+        playerInit();
+        Player p3 = new Player(5, 3, this.c4t);
+        
+        boolean before; 
+        boolean after;
+        
+        before = p3.isOnFlooded();
+        p3 = new Player(9, 2, new OceanCell(9, 2));
+        after = p3.isOnFlooded();
+    
+        return t.checkExpect(p1.isOnFlooded(), false) && 
+                t.checkExpect(p2.isOnFlooded(), false) && 
+                t.checkExpect(before, false) && 
+                t.checkExpect(after, true);
+    }
+    
+    // tests highest point
+    boolean testHighestPoint(Tester t)
+    {
+        cellInit();
+        playerInit();
+        Player p3 = new Player(5, 3, this.center);
+
+        return t.checkExpect(p1.onHighestPoint(), false) && 
+                t.checkExpect(p2.onHighestPoint(), false) && 
+                t.checkExpect(p3.onHighestPoint(), true);
+    }
+    
+    // tests onpoint
+    boolean testOnPoint(Tester t)
+    {
+        cellInit();
+        playerInit();
+        
+        return t.checkExpect(p1.onPoint(0, 0), true) && 
+                t.checkExpect(p1.onPoint(3, 9), false) && 
+                t.checkExpect(p2.onPoint(120, 200), false);
     }
     
 
