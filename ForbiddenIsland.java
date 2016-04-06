@@ -152,7 +152,7 @@ class Cell {
     // returns whether the state of hasPart changed
     // EFFECT: change value of hasPart
     boolean cellLosePart() {
-        if (this.t != null) {
+        if (this.t != null && !t.isHeli()) {
             this.t = null;
             return true;
         } 
@@ -170,6 +170,12 @@ class Cell {
     boolean isNextToFloodedCell() {
         return this.left.isFlooded() || this.right.isFlooded() || 
                 this.bottom.isFlooded() || this.top.isFlooded();
+    }
+    
+    boolean isCenter()
+    {
+        return this.r == ForbiddenIslandWorld.ISLAND_SIZE / 2 && 
+                this.c == ForbiddenIslandWorld.ISLAND_SIZE / 2;
     }
 }
 
@@ -364,7 +370,7 @@ class Player {
 
     boolean onHighestPoint()
     {
-        return curr.height == ForbiddenIslandWorld.ISLAND_SIZE;
+        return curr.isCenter();
     }
 
     boolean onPoint(int r, int c)
@@ -383,6 +389,11 @@ class Target
     {
         this.r = r;
         this.c = c;
+    }
+    
+    boolean isHeli()
+    {
+        return false;
     }
 
     boolean pickUp(Player p, int numParts)
@@ -409,6 +420,11 @@ class Target
 // represents the helicopter in the center
 class HelicopterTarget extends Target
 {
+    boolean isHeli()
+    {
+        return true;
+    }
+    
     HelicopterTarget(int r, int c) {
         super(r, c);
     }
@@ -425,7 +441,8 @@ class HelicopterTarget extends Target
 
     boolean pickUp(Player p, int numParts)
     {
-        return p.onPoint(this.r, this.c) && numParts == 0;
+        return false;
+//        return p.onPoint(this.r, this.c) && numParts == 0;
     }
 }
 
@@ -900,7 +917,7 @@ class ForbiddenIslandWorld extends World {
     // when the games over
     // the player drowns, or the player gets off island
     public WorldEnd worldEnds() {
-        if (player1.isOnFlooded() || player2.isOnFlooded() || (numParts == 0 && 
+        if (player1.isOnFlooded() || player2.isOnFlooded() || ((numParts == 0) &&
                 player1.onHighestPoint() && player2.onHighestPoint())) {
             WorldScene scene = this.getEmptyScene();
             scene.placeImageXY(this.lastImage(), BACKGROUND_SIZE / 2, BACKGROUND_SIZE / 2);
