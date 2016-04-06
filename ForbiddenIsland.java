@@ -438,7 +438,7 @@ class HelicopterTarget extends Target
     {
         return true;
     }
-    
+
     // given a base, draws the target onto it
     WorldImage drawOnto(WorldImage base)
     {
@@ -460,7 +460,7 @@ class HelicopterTarget extends Target
 
 // represents a forbidden island game that is aw world
 class ForbiddenIslandWorld extends World {
-    
+
     IList<Cell> board; // all the cells
     int waterHeight; // the height of the water
     static final int ISLAND_SIZE = 64; // constant val
@@ -472,9 +472,12 @@ class ForbiddenIslandWorld extends World {
     IList<Target> targets; // a list of the targets that remain in the game
     int numParts; // number of helicopter parts
     final HelicopterTarget HELI; // the helicopter
+    int timeBeforeFlood;
 
     // initializes data
     ForbiddenIslandWorld() {
+        this.timeBeforeFlood = 10 * 
+                (ISLAND_SIZE - this.waterHeight) / WATERINCREASE;
         this.HELI = new HelicopterTarget(ISLAND_SIZE / 2, ISLAND_SIZE / 2);
         this.newBoard("m");
     }
@@ -888,13 +891,18 @@ class ForbiddenIslandWorld extends World {
     // EFFECT: increases the water height and updates the board
     public void onTick() {
         this.tick++;
-        // if (tick % 10 == 0) {
-        this.waterHeight += this.WATERINCREASE;
-        IList<Cell> coastline = this.getCoastline();
 
-        for (Cell cell : coastline) {
-            cell.update(this.waterHeight);
-            // }
+        this.timeBeforeFlood--;
+
+        if (tick % 10 == 0) {
+
+            this.waterHeight += this.WATERINCREASE;
+
+            IList<Cell> coastline = this.getCoastline();
+
+            for (Cell cell : coastline) {
+                cell.update(this.waterHeight);
+            }
         }
     }
 
@@ -924,6 +932,9 @@ class ForbiddenIslandWorld extends World {
         image = this.player2.drawOnto(this.player1.drawOnto(image));
 
         scene.placeImageXY(image, BACKGROUND_SIZE / 2, BACKGROUND_SIZE / 2);
+        scene.placeImageXY(new TextImage("Time remaining: " + this.timeBeforeFlood, 
+                30, Color.ORANGE), 150, 15);
+
         return scene;
     }
 
@@ -1001,24 +1012,24 @@ class ExamplesIsland {
     Cell c4r;
     Cell c4l;
     Cell center;
-    
+
     Empty<Integer> mt = new Empty<Integer>();
     Cons<Integer> con1 = new Cons<Integer>(10, this.mt);
     Cons<Integer> con2 = new Cons<Integer>(30, this.con1);
     ArrayList<Integer> arrIn = new ArrayList<Integer>();
     IListIterator<Integer> iter = new IListIterator<Integer>(this.con2);
     IListIterator<Integer> itermt=  new IListIterator<Integer>(this.mt);
-   
+
     Player p1;
     Player p2;
-    
+
     Target t1;
     Target t2;
     Target t3;
-    
+
     HelicopterTarget ht1;
     HelicopterTarget ht2;
-    
+
     // initializes the forbidden island world.
     void gameInit() {
         this.game = new ForbiddenIslandWorld();
@@ -1029,16 +1040,16 @@ class ExamplesIsland {
     {
         this.p1 = new Player(0, 0, c1);
         this.p2 = new Player(12, 5, c4);
- 
+
     }
-    
+
     // initializes target data
     void targetInit()
     {
         this.t1 = new Target(0, 0);
         this.t2 = new Target(0, 1);
         this.t3 = new Target(12, 5);
-        
+
         this.ht1 = new HelicopterTarget(32, 32);
         this.ht2 = new HelicopterTarget(0, 0);
     }
@@ -1204,7 +1215,7 @@ class ExamplesIsland {
                 t.checkExpect(mt.isCons(), false) &&
                 t.checkExpect(mt.remove(10), mt);
     }
-    
+
     // tests cons list
     boolean testCons(Tester t)
     {
@@ -1216,7 +1227,7 @@ class ExamplesIsland {
                 t.checkExpect(con2.remove(30), con1) && 
                 t.checkExpect(con3.first, 20);
     }
-    
+
     // tests the ilist iterator
     boolean testIterator(Tester t)
     {
@@ -1224,59 +1235,59 @@ class ExamplesIsland {
                 t.checkExpect(itermt.hasNext(), false) && 
                 t.checkExpect(iter.next(), 30);           
     }
-    
+
     // tests canMove in player class
     boolean testCanMove(Tester t)
     {
         cellInit();
         playerInit();
-        
+
         this.p1 = new Player(4, 2, this.c4b);
         this.p2 = new Player(40, 20, this.c4r);
-        
+
         return t.checkExpect(p1.canMove("down"), false) && 
                 t.checkExpect(p2.canMove("up"), false) && 
                 t.checkExpect(p2.canMove("left"), true) && 
                 t.checkExpect(p1.canMove("up"), true);
     }
-    
+
     // tests the move method in player class
     boolean testMove(Tester t)
     {
         cellInit();
         playerInit();
-        
+
         this.p1 = new Player(4, 2, this.c4b);
         this.p2 = new Player(40, 20, this.c4r);
-        
+
         return t.checkExpect(p1.move("right"), false) && 
                 t.checkExpect(p2.move("up"), false) &&
                 t.checkExpect(p1.move("right"), false);
     }
-    
+
     // tests if a player is on flooded cell
     boolean testOnFlooded(Tester t)
     {
         cellInit();
         playerInit();
-        
+
         this.p1 = new Player(4, 2, this.c4b);
         this.p2 = new Player(40, 20, this.c4r);
         Player p3 = new Player(5, 3, this.c4t);
-        
+
         boolean before; 
         boolean after;
-        
+
         before = p3.isOnFlooded();
         p3 = new Player(9, 2, new OceanCell(9, 2));
         after = p3.isOnFlooded();
-    
+
         return t.checkExpect(this.p1.isOnFlooded(), false) && 
                 t.checkExpect(this.p2.isOnFlooded(), false) && 
                 t.checkExpect(before, false) && 
                 t.checkExpect(after, true);
     }
-    
+
     // tests highest point
     boolean testHighestPoint(Tester t)
     {
@@ -1288,26 +1299,26 @@ class ExamplesIsland {
                 t.checkExpect(this.p2.onHighestPoint(), false) && 
                 t.checkExpect(p3.onHighestPoint(), true);
     }
-    
+
     // tests onpoint
     boolean testOnPoint(Tester t)
     {
         cellInit();
         playerInit();
         targetInit();
-        
+
         return t.checkExpect(this.p1.onPoint(this.t1), true) && 
                 t.checkExpect(this.p1.onPoint(this.t2), false) && 
                 t.checkExpect(this.p2.onPoint(this.t3), true);
     }
-    
+
     // tests target methods
     boolean testTarget(Tester t)
     {
         cellInit();
         playerInit();
         targetInit();
-        
+
         return t.checkExpect(this.t1.isHeli(), false) && 
                 t.checkExpect(this.t2.isHeli(), false) && 
                 t.checkExpect(this.ht1.isHeli(), true) &&
