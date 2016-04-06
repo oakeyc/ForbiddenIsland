@@ -385,7 +385,7 @@ class Target
         this.c = c;
     }
 
-    boolean pickUp(Player p)
+    boolean pickUp(Player p, int numParts)
     {
         return p.onPoint(this.r, this.c);
     }
@@ -454,7 +454,7 @@ class ForbiddenIslandWorld extends World {
     // sets player to a new player with no progress at the center of the board,
     // resets waterHeight and tick to 0.
     void newBoard(String type) {
-        this.numParts = 6;
+        this.numParts = 3;
         if (type.equals("m")) {
             this.makeMountainBoard();
         } 
@@ -482,15 +482,16 @@ class ForbiddenIslandWorld extends World {
         int counter = 0;
 
         // random indicies for helicopter parts
-        while (counter <= numParts) {
+        while (counter < numParts) {
             int indexOuter = (int) (Math.random() * heights.size());
             int indexInner = (int) (Math.random() * heights.get(0).size());
 
             if (heights.get(indexOuter).get(indexInner) >= 5) {
                 t = new Target(indexOuter, indexInner);
                 targets = new Cons<Target>(t, targets);
+                counter++;
+
             }
-            counter++;
         }
     }
 
@@ -823,7 +824,7 @@ class ForbiddenIslandWorld extends World {
             if (this.player1.move(key)) {
                 for (Target t: this.targets)
                 {
-                    if (t.pickUp(player1))
+                    if (t.pickUp(this.player1, this.numParts))
                     {
                         this.targets.remove(t);
                     }
@@ -838,7 +839,7 @@ class ForbiddenIslandWorld extends World {
             {
                 for (Target t: this.targets)
                 {
-                    if (t.pickUp(player2))
+                    if (t.pickUp(player2, this.numParts))
                     {
                         this.targets.remove(t);
                     }
@@ -899,7 +900,7 @@ class ForbiddenIslandWorld extends World {
     // when the games over
     // the player drowns, or the player gets off island
     public WorldEnd worldEnds() {
-        if (player1.isOnFlooded() || player2.isOnFlooded() || (numParts == 1 && 
+        if (player1.isOnFlooded() || player2.isOnFlooded() || (numParts == 0 && 
                 player1.onHighestPoint() && player2.onHighestPoint())) {
             WorldScene scene = this.getEmptyScene();
             scene.placeImageXY(this.lastImage(), BACKGROUND_SIZE / 2, BACKGROUND_SIZE / 2);
