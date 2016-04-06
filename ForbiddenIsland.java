@@ -921,8 +921,8 @@ class ForbiddenIslandWorld extends World {
         if (this.scuba.isActivated())
         {
             // moves the player
-            if (key.equals("up") || key.equals("down") || k
-                    ey.equals("left") || key.equals("right")) {
+            if (key.equals("up") || key.equals("down") || 
+                    key.equals("left") || key.equals("right")) {
                 if (this.player1.moveWater(key)) {
                     for (Target t: this.targets)
                     {
