@@ -921,7 +921,8 @@ class ForbiddenIslandWorld extends World {
         if (this.scuba.isActivated())
         {
             // moves the player
-            if (key.equals("up") || key.equals("down") || key.equals("left") || key.equals("right")) {
+            if (key.equals("up") || key.equals("down") || k
+                    ey.equals("left") || key.equals("right")) {
                 if (this.player1.moveWater(key)) {
                     for (Target t: this.targets)
                     {
@@ -952,7 +953,8 @@ class ForbiddenIslandWorld extends World {
         else
         {
             // moves the player
-            if (key.equals("up") || key.equals("down") || key.equals("left") || key.equals("right")) {
+            if (key.equals("up") || key.equals("down") || 
+                    key.equals("left") || key.equals("right")) {
                 if (this.player1.move(key)) {
                     for (Target t: this.targets)
                     {
@@ -1047,7 +1049,7 @@ class ForbiddenIslandWorld extends World {
         if (this.scuba.isActivated)
         {
             scene.placeImageXY(new TextImage("INVINCIBILITY TIME: " + this.scubaTime,
-                    30, Color.WHITE), 550, 10);
+                    30, Color.WHITE), 550, 15);
         }
 
         return scene;
@@ -1134,7 +1136,7 @@ class ExamplesIsland {
     Cons<Integer> con2 = new Cons<Integer>(30, this.con1);
     ArrayList<Integer> arrIn = new ArrayList<Integer>();
     IListIterator<Integer> iter = new IListIterator<Integer>(this.con2);
-    IListIterator<Integer> itermt=  new IListIterator<Integer>(this.mt);
+    IListIterator<Integer> itermt =  new IListIterator<Integer>(this.mt);
 
     Player p1;
     Player p2;
