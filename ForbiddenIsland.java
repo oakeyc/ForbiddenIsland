@@ -350,6 +350,19 @@ class Player {
         return false;
     }
 
+    // moves through water when invincible
+    // returns if we pick up a helicopter piece or not
+    boolean moveWater(String move) {
+
+        this.curr = curr.getNeighbor(move);
+        this.r = this.curr.r;
+        this.c = this.curr.c;
+        this.steps++;
+
+        return this.curr.cellLosePart();
+
+    }
+
     // is this player on a flooded cell?
     boolean isOnFlooded() {
         return this.curr.isFlooded();
@@ -425,6 +438,49 @@ class Target
     }
 }
 
+// represents a scuba target
+// prevents drowning
+class ScubaTarget extends Target
+{
+    boolean isActivated;
+    // ctor
+    ScubaTarget(int r, int c) {
+        super(r, c);
+    }
+
+    // gets picked up
+    // EFFECT: changes isActivated
+    boolean pickUp(Player p)
+    {
+        this.isActivated = super.pickUp(p);
+        return this.isActivated;
+    }
+
+    // whether we are activated
+    boolean isActivated()
+    {
+        return this.isActivated;
+    }
+
+    // unactivates it
+    // EFFECT: changes isActivated
+    void unActivate()
+    {
+        this.isActivated = false;
+    }
+
+    // given a base, draws the target onto it
+    WorldImage drawOnto(WorldImage base)
+    {
+        double scale = 0.5 * Cell.CELL_SIZE / 15;
+
+        WorldImage copt = new ScaleImage(
+                new FromFileImage("Images/scuba-icon.jpg"), scale);
+
+        return new OverlayImage(copt, base);
+    } 
+}
+
 // represents the helicopter in the center
 class HelicopterTarget extends Target
 {
@@ -473,6 +529,9 @@ class ForbiddenIslandWorld extends World {
     int numParts; // number of helicopter parts
     final HelicopterTarget HELI; // the helicopter
     int timeBeforeFlood;
+    ScubaTarget scuba;
+    int scubaTime = 10; // time for not drowning
+
 
     // initializes data
     ForbiddenIslandWorld() {
@@ -511,17 +570,23 @@ class ForbiddenIslandWorld extends World {
     void generateCopterParts(ArrayList<ArrayList<Double>> heights)
     {
         Target t;
-        targets = new Cons<Target>(HELI, new Empty<Target>());
+        this.targets = new Cons<Target>(this.HELI, new Empty<Target>());
         int counter = 0;
+        int numScuba = 1;
 
         // random indicies for helicopter parts
-        while (counter < numParts) {
+        while (counter < this.numParts + numScuba) {
             int indexOuter = (int) (Math.random() * heights.size());
             int indexInner = (int) (Math.random() * heights.get(0).size());
 
             if (heights.get(indexOuter).get(indexInner) >= 5) {
+                if (counter == this.numParts) // last one is scuba
+                {
+                    this.scuba = new ScubaTarget(indexOuter, indexInner);
+                    this.targets = new Cons<Target>(this.scuba, this.targets);
+                }
                 t = new Target(indexOuter, indexInner);
-                targets = new Cons<Target>(t, targets);
+                this.targets = new Cons<Target>(t, this.targets);
                 counter++;
 
             }
@@ -852,37 +917,71 @@ class ForbiddenIslandWorld extends World {
 
     // changes the state of the world given a key stroke
     public void onKeyEvent(String key) {
-        // moves the player
-        if (key.equals("up") || key.equals("down") || key.equals("left") || key.equals("right")) {
-            if (this.player1.move(key)) {
-                for (Target t: this.targets)
-                {
-                    if (t.pickUp(this.player1))
-                    {
-                        this.targets.remove(t);
-                    }
-                }
-                this.numParts--;
-            }
-        }
 
-        if (key.equals("a") || key.equals("w") || key.equals("d") || key.equals("s"))
+        if (this.scuba.isActivated())
         {
-            if (this.player2.move(translate(key)))
-            {
-                for (Target t: this.targets)
-                {
-                    if (t.pickUp(player2))
+            // moves the player
+            if (key.equals("up") || key.equals("down") || key.equals("left") || key.equals("right")) {
+                if (this.player1.moveWater(key)) {
+                    for (Target t: this.targets)
                     {
-                        this.targets.remove(t);
+                        if (t.pickUp(this.player1))
+                        {
+                            this.targets.remove(t);
+                        }
                     }
+                    this.numParts--;
                 }
-                this.numParts--;
+            }
+
+            if (key.equals("a") || key.equals("w") || key.equals("d") || key.equals("s"))
+            {
+                if (this.player2.moveWater(translate(key)))
+                {
+                    for (Target t: this.targets)
+                    {
+                        if (t.pickUp(player2))
+                        {
+                            this.targets.remove(t);
+                        }
+                    }
+                    this.numParts--;
+                }
             }
         }
+        else
+        {
+            // moves the player
+            if (key.equals("up") || key.equals("down") || key.equals("left") || key.equals("right")) {
+                if (this.player1.move(key)) {
+                    for (Target t: this.targets)
+                    {
+                        if (t.pickUp(this.player1))
+                        {
+                            this.targets.remove(t);
+                        }
+                    }
+                    this.numParts--;
+                }
+            }
 
+            if (key.equals("a") || key.equals("w") || key.equals("d") || key.equals("s"))
+            {
+                if (this.player2.move(translate(key)))
+                {
+                    for (Target t: this.targets)
+                    {
+                        if (t.pickUp(player2))
+                        {
+                            this.targets.remove(t);
+                        }
+                    }
+                    this.numParts--;
+                }
+            }
+        }
         // new islands
-        else if (key.equals("m") || key.equals("r") || key.equals("t")) {
+        if (key.equals("m") || key.equals("r") || key.equals("t")) {
             this.newBoard(key);
         }
     }
@@ -893,6 +992,16 @@ class ForbiddenIslandWorld extends World {
         this.tick++;
 
         this.timeBeforeFlood--;
+
+        if (this.scuba.isActivated)
+        {
+            this.scubaTime--;
+
+            if (this.scubaTime == 0)
+            {
+                this.scuba.unActivate();
+            }
+        }
 
         if (tick % 10 == 0) {
 
@@ -935,14 +1044,21 @@ class ForbiddenIslandWorld extends World {
         scene.placeImageXY(new TextImage("Time remaining: " + this.timeBeforeFlood, 
                 30, Color.ORANGE), 150, 15);
 
+        if (this.scuba.isActivated)
+        {
+            scene.placeImageXY(new TextImage("INVINCIBILITY TIME: " + this.scubaTime,
+                    30, Color.WHITE), 550, 10);
+        }
+
         return scene;
     }
 
     // when the games over
     // the player drowns, or the player gets off island
     public WorldEnd worldEnds() {
-        if (player1.isOnFlooded() || player2.isOnFlooded() || ((numParts == 0) &&
-                player1.onHighestPoint() && player2.onHighestPoint())) {
+        if ((!this.scuba.isActivated && (player1.isOnFlooded() || player2.isOnFlooded())) || 
+                ((numParts == 0) && player1.onHighestPoint() && player2.onHighestPoint()))
+        {
             WorldScene scene = this.getEmptyScene();
             scene.placeImageXY(this.lastImage(), BACKGROUND_SIZE / 2, BACKGROUND_SIZE / 2);
 
