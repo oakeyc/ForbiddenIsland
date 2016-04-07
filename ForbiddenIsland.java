@@ -737,6 +737,7 @@ class ForbiddenIslandWorld extends World {
         }
         this.waterHeight = 0;
         this.tick = 0;
+        this.scubaTime = 10;
         this.timeBeforeFlood = 10 * 
                 (ISLAND_SIZE - this.waterHeight) / WATERINCREASE;
         this.player1 = new Player(ISLAND_SIZE / 2, ISLAND_SIZE / 2,
@@ -1554,6 +1555,9 @@ class ExamplesIsland {
     HelicopterTarget ht1;
     HelicopterTarget ht2;
 
+    ForbiddenIslandWorld world;
+    ForbiddenIslandWorld wHex;
+
     // initializes the forbidden island world.
     void gameInit() {
         this.game = new ForbiddenIslandWorld();
@@ -1578,6 +1582,7 @@ class ExamplesIsland {
 
         this.ht1 = new HelicopterTarget(32, 32);
         this.ht2 = new HelicopterTarget(0, 0);
+
     }
 
     // initializes the data for testing
@@ -1602,8 +1607,9 @@ class ExamplesIsland {
 
     // initializes the board data
     void boardInit() {
-        // initializing data
-
+        this.world = new ForbiddenIslandWorld();
+        
+        this.wHex = new ForbiddenIslandWorld();
     }
 
     /*
@@ -1857,6 +1863,33 @@ class ExamplesIsland {
                 ForbiddenIslandWorld.BACKGROUND_SIZE, 0.1);
     }
 
+    
+    // tests the translate
+    void testTranslate(Tester t)
+    {
+        boardInit();
+        
+        t.checkExpect(this.world.translate("a"), "left");
+        t.checkExpect(this.world.translate("w"), "up");
+        t.checkExpect(this.world.translate("d"), "right");
+        t.checkExpect(this.world.translate("s"), "down");
+        t.checkExpect(this.world.translate("hi"), "bad");
+    }
+
+    // tests hextranslate
+    void testHexTrans(Tester t)
+    {
+        boardInit();
+        
+        t.checkExpect(this.wHex.translate("a"), "left");
+        t.checkExpect(this.wHex.translate("w"), "up");
+        t.checkExpect(this.wHex.translate("e"), "right"); 
+        t.checkExpect(this.wHex.translate("d"), "botright");
+        t.checkExpect(this.wHex.translate("n"), "down"); 
+        t.checkExpect(this.wHex.translate("z"), "botleft");
+        t.checkExpect(this.wHex.translate("hi"), "bad"); 
+        
+    }
     // main, runs the class
     public static void main(String[] args) {
         ForbiddenIslandWorld game = new ForbiddenIslandWorld();

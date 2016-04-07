@@ -1,2 +1,0 @@
-# PublicContinent
-public continents everywhere
