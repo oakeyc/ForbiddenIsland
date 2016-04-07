@@ -1609,19 +1609,9 @@ class ExamplesIsland {
     void boardInit() {
         this.world = new ForbiddenIslandWorld();
         
-        this.wHex = new ForbiddenIslandWorld();
+        this.wHex = new ForbiddenIslandWorld(); 
+        this.wHex.hex = true;
     }
-
-    /*
-     * To Test: ForbiddenIslandWorld: heightsToCells newVariance onBoard cellAt
-     * getCoastline
-     * 
-     * Player: isOnFlooded move canMove
-     * 
-     * Cell: getNeighbor isFlooded
-     * 
-     * Other: ?
-     */
 
     // tests isCons method.
     void testIsCons(Tester t) {
@@ -1855,14 +1845,6 @@ class ExamplesIsland {
         t.checkExpect(this.ht1.pickUp(), false);
         t.checkExpect(this.ht2.pickUp(), false);
     }
-
-    // tests the island
-    void testIsland(Tester t) {
-        this.gameInit();
-        this.game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE,
-                ForbiddenIslandWorld.BACKGROUND_SIZE, 0.1);
-    }
-
     
     // tests the translate
     void testTranslate(Tester t)
@@ -1881,19 +1863,20 @@ class ExamplesIsland {
     {
         boardInit();
         
-        t.checkExpect(this.wHex.translate("a"), "left");
-        t.checkExpect(this.wHex.translate("w"), "up");
-        t.checkExpect(this.wHex.translate("e"), "right"); 
-        t.checkExpect(this.wHex.translate("d"), "botright");
-        t.checkExpect(this.wHex.translate("n"), "down"); 
-        t.checkExpect(this.wHex.translate("z"), "botleft");
-        t.checkExpect(this.wHex.translate("hi"), "bad"); 
-        
+        t.checkExpect(this.wHex.hexTranslate("a"), "left");
+        t.checkExpect(this.wHex.hexTranslate("w"), "up");
+        t.checkExpect(this.wHex.hexTranslate("e"), "right"); 
+        t.checkExpect(this.wHex.hexTranslate("d"), "botright");
+        t.checkExpect(this.wHex.hexTranslate("n"), "down");
+        t.checkExpect(this.wHex.hexTranslate("z"), "botleft");
+        t.checkExpect(this.wHex.hexTranslate("hi"), "bad"); 
     }
-    // main, runs the class
-    public static void main(String[] args) {
-        ForbiddenIslandWorld game = new ForbiddenIslandWorld();
-        game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE,
+
+
+    // tests the island
+    void testIsland(Tester t) {
+        this.gameInit();
+        this.game.bigBang(ForbiddenIslandWorld.BACKGROUND_SIZE,
                 ForbiddenIslandWorld.BACKGROUND_SIZE, 0.1);
     }
 }
