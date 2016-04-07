@@ -1871,8 +1871,137 @@ class ExamplesIsland {
         t.checkExpect(this.wHex.hexTranslate("z"), "botleft");
         t.checkExpect(this.wHex.hexTranslate("hi"), "bad"); 
     }
-
-
+    
+    // tests move player
+    void testMovePlayer(Tester t)
+    {
+        cellInit();
+        playerInit();
+        boardInit();
+        Cell before;
+        Cell after;
+        
+        this.world.movePlayer(1, "down");
+        t.checkExpect(this.world.player1.steps, 1);
+        this.world.scuba.isActivated = true;
+        this.world.movePlayer(1, "up");
+        t.checkExpect(this.world.player1.steps, 2);
+        before = this.world.player2.curr;
+        this.world.movePlayer(2, "down");
+        after = this.world.player2.curr;
+        t.checkExpect(this.world.player1.steps, 2);
+        t.checkExpect(!(before.equals(after)), true);
+        
+        int bef = this.wHex.numParts;
+        this.wHex.movePlayer(2, "right");
+        int af = this.wHex.numParts;
+        t.checkExpect(bef, af);
+    }
+    
+    // tests on key
+    void testOnKey(Tester t)
+    {
+        cellInit();
+        playerInit();
+        boardInit();
+        boolean bef;
+        boolean af;
+        int rBef;
+        int rAf;
+        int cBef;
+        int cAf;
+        IList<Cell> coastBef;
+        IList<Cell> coastAf;
+        
+        this.world.onKeyEvent("6");
+        bef = this.world.scuba.isActivated();
+        t.checkExpect(bef, false);
+        this.world.scuba.isAvailible = true;
+        this.world.onKeyEvent("6");
+        af = this.world.scuba.isActivated();
+        t.checkExpect(af, true);
+        
+        rBef = this.world.player1.r;
+        cBef = this.world.player1.c;
+        this.world.onKeyEvent("up");
+        rAf = this.world.player1.r;
+        cAf = this.world.player1.c;
+        
+        t.checkExpect(rBef != rAf, true);
+        t.checkExpect(cBef == cAf, true);
+        
+        rBef = this.world.player2.r;
+        cBef = this.world.player2.c;
+        this.world.onKeyEvent("a");
+        rAf = this.world.player2.r;
+        cAf = this.world.player2.c;
+        
+        t.checkExpect(rBef == rAf, true);
+        t.checkExpect(cBef != cAf, true);
+        
+        coastBef = this.world.getCoastline();
+        this.world.onKeyEvent("t");
+        coastAf = this.world.getCoastline();
+        t.checkExpect(coastBef.equals(coastAf), false);    
+        
+        bef = this.world.hex;
+        this.world.onKeyEvent("h");
+        af = this.world.hex;
+        t.checkExpect(bef, !af);
+        
+        bef = this.wHex.hex;
+        this.wHex.onKeyEvent("h");
+        af = this.wHex.hex;
+        t.checkExpect(bef, !af);         
+    }
+    
+    // test ontick
+    void testOnTick(Tester t)
+    {
+        cellInit();
+        playerInit();
+        boardInit();
+        boolean bef;
+        boolean af;
+        int before;
+        int after;
+        IList<Cell> coastBef;
+        IList<Cell> coastAf;
+        
+        before = this.world.tick;
+        this.world.onTick();
+        after = this.world.tick;
+        t.checkExpect(before, after - 1);
+        
+        before = this.world.scubaTime;
+        this.world.onTick();
+        after = this.world.scubaTime;
+        t.checkExpect(before, after);
+        
+        this.world.scuba.activate();
+        this.world.onTick();
+        before = this.world.scubaTime;
+        t.checkExpect(after, before + 1);
+        
+        this.world.scubaTime = 1;
+        bef = this.world.scuba.isActivated;
+        this.world.onTick();
+        af = this.world.scuba.isActivated;
+        t.checkExpect(bef != af, true);
+        
+        coastBef = this.world.getCoastline();
+        this.world.tick = 100;
+        this.world.onTick();
+        coastAf = this.world.getCoastline();
+        t.checkExpect(coastBef.equals(coastAf), false);
+        
+        coastBef = this.world.getCoastline();
+        this.world.tick = 101;
+        this.world.onTick();
+        coastAf = this.world.getCoastline();
+        t.checkExpect(coastBef.equals(coastAf), false);
+    }
+    
     // tests the island
     void testIsland(Tester t) {
         this.gameInit();
