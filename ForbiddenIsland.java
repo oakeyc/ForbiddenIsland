@@ -1976,7 +1976,48 @@ class ExamplesIsland {
     // test ontick
     void testOnTick(Tester t)
     {
+        cellInit();
+        playerInit();
+        boardInit();
+        boolean bef;
+        boolean af;
+        int before;
+        int after;
+        IList<Cell> coastBef;
+        IList<Cell> coastAf;
         
+        before = this.world.tick;
+        this.world.onTick();
+        after = this.world.tick;
+        t.checkExpect(before, after - 1);
+        
+        before = this.world.scubaTime;
+        this.world.onTick();
+        after = this.world.scubaTime;
+        t.checkExpect(before, after);
+        
+        this.world.scuba.activate();
+        this.world.onTick();
+        before = this.world.scubaTime;
+        t.checkExpect(after, before + 1);
+        
+        this.world.scubaTime = 1;
+        bef = this.world.scuba.isActivated;
+        this.world.onTick();
+        af = this.world.scuba.isActivated;
+        t.checkExpect(bef != af, true);
+        
+        coastBef = this.world.getCoastline();
+        this.world.tick = 100;
+        this.world.onTick();
+        coastAf = this.world.getCoastline();
+        t.checkExpect(coastBef.equals(coastAf), false);
+        
+        coastBef = this.world.getCoastline();
+        this.world.tick = 101;
+        this.world.onTick();
+        coastAf = this.world.getCoastline();
+        t.checkExpect(coastBef.equals(coastAf), false);
     }
 
     // main, runs the class
